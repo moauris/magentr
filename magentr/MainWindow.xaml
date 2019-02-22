@@ -1,0 +1,32 @@
+﻿<Window x:Class="magentr.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:magentr"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <StackPanel Orientation="Horizontal" 
+                    VerticalAlignment="Top"
+                    Margin="9">
+            <Button Content="Read New Request Form"
+                    Width="160" Height="30"
+                    Margin="9"
+                    ToolTip="Load a new M/Agent Application .xlsx File from location."
+                    Click="OnNewRequestClick"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" 
+                    VerticalAlignment="Bottom"
+                    Background="LightGray">
+            <Label x:Name="lblStatus"
+                   Height="30" Width="150" Margin="2"
+                   Content="Status"
+                   Background="Bisque"/>
+            <ProgressBar x:Name="pbarMain"
+                     Width="610" Height="30" Margin="18,2,2,2"
+                         Maximum="1000" Minimum="0"/>
+        </StackPanel>
+        
+    </Grid>
+</Window>
