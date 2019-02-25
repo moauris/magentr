@@ -47,6 +47,28 @@
             <h2>Version 0.0.0.1</h2>
             <a name="v0001" />
             <p>
+                To test the new Form load speed on Shapes, make a test run: All Shapes top left corner cell mark as interior color green.
+                Success!
+
+                as shown on the right, all shape's top left cell are colorized as Red:
+                <img class="demo_horizaontal_strip" src="resources/colorshapestopleftred.jpg"/>
+            </p>
+            <p>This means that it can fetch the data within a certain cell using LINQ.</p>
+            <h3>Making of Shape Fetching method for Each Group</h3>
+            <p>
+                Input Object: Cell Range for a group of Check Box Items. <br />
+                Output Object: <strike>A Range Object Value of the Check Box Checked.</strike><br />
+                Output Object: A dictionary with range as key and value as string.
+
+            </p>
+            <p>
+                Success! The process can now take a Range Value, and return a string value.
+                Some learning points:<br />
+                C# cannot refer to COMS Object to test against another COMS Object. Even if they refer to the same COMS
+                C# still sees them as two different Objects, and won't trigger the if true statements.<br />
+                If using the Used Range method, then the object cannot use a [cell1, cell2] structure to fetch the cell object in fixed value,
+                it has to be used like an iteration. But, the Worksheet.Range[] can be used like this, so there is really no need to 
+                specify the used Range Object again, I'm going to do a specification mapping anyways.
 
             </p>
         </div>

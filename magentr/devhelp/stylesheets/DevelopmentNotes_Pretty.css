@@ -254,12 +254,18 @@ footer li {
 .vcentercontainer img {
 	margin: 2.8125em auto;
 }
-.demo {
+.demonormal {
 	height: 21em;
 	width: auto;
 	float: right;
 	margin-left: 3em;
 	
+}
+
+.demo_horizaontal_strip {
+    width: 38em;
+    height: auto;
+    float:none;
 }
 .details {
 	background-color: #9E5056;
