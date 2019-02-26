@@ -16,6 +16,16 @@
                     ToolTip="Load a new M/Agent Application .xlsx File from location."
                     Click="OnNewRequestClick"/>
         </StackPanel>
+        <ScrollViewer x:Name="svDebug" Height="220" Margin="5 0 5 0"
+                 IsEnabled="True" Background="DarkGray"
+                 Foreground="Black">
+            <ListBox x:Name="lbxDebug" >
+                <ListBoxItem>
+                    Debug Window
+                </ListBoxItem>
+            </ListBox>
+        </ScrollViewer>
+        
         <StackPanel Orientation="Horizontal" 
                     VerticalAlignment="Bottom"
                     Background="LightGray">

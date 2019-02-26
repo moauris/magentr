@@ -71,6 +71,37 @@
                 specify the used Range Object again, I'm going to do a specification mapping anyways.
 
             </p>
+            <h3>
+                Creating RequestSheet, RequestColumns, MAgent, and server Classes.
+            </h3>
+            <p>
+                In This step, 4 classes are created, just like the hierarchy order of the information being processed.
+            </p>
+            <h3>
+                A Little Thoughts on Development (2019-02-26 09:50:03)
+            </h3>
+            <p>Evidently, there is a need to make the procedure run faster.</p>
+            <p>
+                <strong>Using COMS object (unmanaged memory) is so slow, that it almost doesn't make sense. (35 seconds+)</strong>
+                The Current idea is much like the first time I'm writing this code.
+            </p>
+            <p>
+                What I need are two copies of informations from the sheet right away.
+                <ul>
+                    <li>Values in designated cells</li>
+                    <li>Values in Checkboxes</li>
+                </ul>
+                Different from the first time conundrum, I now know about a way to fetch "Address" (Such as "$H$37"), and link it to a value.
+                Even Check Box Items can do that. Because I know how to use a dictionary Object.
+
+            </p>
+            <p>The structure then becomes more simple, make a "load" method that takes an excel object, and "spew out" a Dictionary Object, which is to be 
+            used by all the entire procedure.</p>
+            <h3>Major Bug: Form Area Dictionary uses Check Box Ranges</h3>
+            <p>
+                ...which causes the program to abend with Key Already added.
+                So the list needs to be splited, still. one formarea, one checkbox.
+            </p>
         </div>
     </body>
 </html>
