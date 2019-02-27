@@ -10,6 +10,7 @@ using System.Windows.Media;
 using EXCEL = Microsoft.Office.Interop.Excel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Net;
 
 namespace magentr
 {
@@ -209,7 +210,7 @@ namespace magentr
             }
 
             #endregion --------Test two Dictionary Objects---------
-            //MessageBox.Show("Click to Continue.");
+            MessageBox.Show("Click to Continue.");
             string[] col1_NetLoc = new string[4]
             {
                 "$H$42","$J$42",
@@ -234,7 +235,12 @@ namespace magentr
                 "$H$58","$J$58",
                 "$H$59"
             };
-            MAServers server1 = new MAServers
+            MAServers c1Cluster = new MAServers();
+            MAServers c1VIP = 
+                new MAServers(
+                        dictRequestRawData["$H$49"]
+                        );
+            MAServers c1PRI = new MAServers
                 (
                     range1
                     , oscheck1
@@ -244,7 +250,30 @@ namespace magentr
                     , dictCheckBox
                     , MAServers.agCluster.PRI
                 );
-            printDebugListBox.Report(server1.FullInfo());
+            string[] range2 = new string[13]
+            {
+                "$H$64","$H$65","$H$66","$H$67","$H$68",
+                "$H$69","$H$70","$H$71","$H$72","$H$73",
+                "$H$74","$H$75","$H$76"
+            };
+            string[] oscheck2 = new string[5]
+            {
+                "$H$70","$J$70",
+                "$H$71","$J$71",
+                "$H$72"
+            };
+            MAServers c1SEC = new MAServers
+                (
+                    range2
+                    , oscheck2
+                    , col1_NetLoc
+                    , col1_NetAre
+                    , dictRequestRawData
+                    , dictCheckBox
+                    , MAServers.agCluster.SEC
+                );
+            c1Cluster = new MAServers(c1VIP, c1PRI, c1SEC);
+            printDebugListBox.Report(c1Cluster.FullClusterInfo());
             RequestColumns colH = new RequestColumns();
             RequestColumns colL = new RequestColumns();
             RequestColumns colP = new RequestColumns();
@@ -278,7 +307,6 @@ namespace magentr
                 Debug.Print("Checking Address:" + r.Address);
                 if (dicCheckedBoxes.ContainsKey(r.Address))
                 {
-
                     result = dicCheckedBoxes[r.Address];
                 }
             }

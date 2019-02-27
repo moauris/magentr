@@ -60,7 +60,7 @@ namespace magentr
         public agCluster Cluster;
         public enum agCluster
         {
-            VIP,PRI,SEC
+            VIP, PRI, SEC
         }
         public MAServers VIP = null;
         public MAServers PRI = null;
@@ -76,7 +76,7 @@ namespace magentr
         public int BoxSplit;
         public int BoxThis;
         //Instantiate an empty Server object, which server information.
-        
+
         public MAServers() { }
         public MAServers(string hostname)
         {
@@ -86,6 +86,7 @@ namespace magentr
         {
             this.Hostname = hostname;
             IP_Address = ip_Address;
+            Cluster = agCluster.VIP;
         }
         public MAServers(
             string[] Range
@@ -111,8 +112,8 @@ namespace magentr
                 (from KeyValuePair<string, string> k
                  in dictCheckBox
                  from string s in OSCheck
-                where s == k.Key
-                select k.Value).First();
+                 where s == k.Key
+                 select k.Value).First();
 
             this.NetLoca = (string)
                 (from KeyValuePair<string, string> k
@@ -133,6 +134,7 @@ namespace magentr
             this.BoxSplit = Convert.ToInt32(dictSrcSheet[Range[11]]);
             this.BoxThis = Convert.ToInt32(dictSrcSheet[Range[12]]);
             this.Cluster = clusterIndex;
+            this.IsEmpty = this.Hostname.Length < 8 ? true : false;
         }
 
         public MAServers(
@@ -200,6 +202,8 @@ namespace magentr
 
             return sbInfo.ToString();
         }
+
+        public bool IsEmpty {get; set;}
 
     }
 }
