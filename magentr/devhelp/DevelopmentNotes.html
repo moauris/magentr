@@ -91,12 +91,24 @@
                     <li>Values in designated cells</li>
                     <li>Values in Checkboxes</li>
                 </ul>
+            </p>
+            <p>
                 Different from the first time conundrum, I now know about a way to fetch "Address" (Such as "$H$37"), and link it to a value.
                 Even Check Box Items can do that. Because I know how to use a dictionary Object.
-
             </p>
             <p>The structure then becomes more simple, make a "load" method that takes an excel object, and "spew out" a Dictionary Object, which is to be 
             used by all the entire procedure.</p>
+            <p>
+                So the testing for the process run by using the <br />
+                <code>Do { Get-Process -Name Excel ; Start-Sleep -Seconds 2 } While ($true)</code><br />
+                In Powershell.
+                And the result is:<br />
+                <img class="demo_horizaontal_strip" src="resources/Excel_Process_Active.jpg" />
+            </p>
+            <p>
+                It runs for about 17 seconds, almost the same as the debug log says.<br />
+                And more importantly, it automatically ends the process without any hold up.
+            </p>
             <h3>Major Bug: Form Area Dictionary uses Check Box Ranges</h3>
             <p>
                 ...which causes the program to abend with Key Already added.

@@ -77,8 +77,10 @@ namespace magentr
         private void SyncVonExcel(FileInfo inputfile 
             , IProgress<int> reportProgressBar
             , IProgress<int> setProgressBarMax
-            , IProgress<string> printDebugListBox)
+            , IProgress<string> printDebugListBox
+            , out RequestSheet newRequest)
         {
+            newRequest = new RequestSheet();
             dictRequestRawData
             = new Dictionary<string, string>();
             dictCheckBox
@@ -91,10 +93,10 @@ namespace magentr
                 printDebugListBox.Report("M/Agent Application File Does not Exist!");
                 return;
             }
-            EXCEL.Application xlApp = new EXCEL.Application(); reportProgressBar.Report(20);
-            EXCEL.Workbooks xlWorkbooks = xlApp.Workbooks; reportProgressBar.Report(40);
-            EXCEL.Workbook xlWbk = xlWorkbooks.Open(inputfile.FullName); reportProgressBar.Report(60);
-            EXCEL.Worksheet xlSht = xlWbk.ActiveSheet; reportProgressBar.Report(80);
+            EXCEL.Application xlApp = new EXCEL.Application();              reportProgressBar.Report(20);
+            EXCEL.Workbooks xlWorkbooks = xlApp.Workbooks;                  reportProgressBar.Report(40);
+            EXCEL.Workbook xlWbk = xlWorkbooks.Open(inputfile.FullName);    reportProgressBar.Report(60);
+            EXCEL.Worksheet xlSht = xlWbk.ActiveSheet;                      reportProgressBar.Report(80);
             // EXCEL.Range xlRange = xlSht.UsedRange;
             reportProgressBar.Report(100);
             Debug.Print("Loading Completed.");
@@ -177,7 +179,7 @@ namespace magentr
             //Show Entire Value Dictionary Object:
             
             #endregion ---- Fetch M/Agent Information ----
-            xlWbk.Close(false, Missing.Value, Missing.Value); //This Argument will cause excel to exist without saving.
+            xlWbk.Close(false, Missing.Value, Missing.Value); //Arguments in this will cause excel to exist without saving.
             xlWorkbooks.Close();
             xlApp.Quit();
             Marshal.ReleaseComObject(xlApp);
@@ -185,6 +187,8 @@ namespace magentr
             Marshal.ReleaseComObject(xlWbk);
             Marshal.ReleaseComObject(xlSht);
             //Marshal.ReleaseComObject(xlRange);
+            #region --------Test two Dictionary Objects---------
+            /*
             setProgressBarMax.Report(dictRequestRawData.Count);
             int CurrentProgress = 0;
             foreach (KeyValuePair<string, string> k in dictRequestRawData)
@@ -199,6 +203,17 @@ namespace magentr
                 printDebugListBox.Report(string.Format("{0,-7}|{1}", k.Key, k.Value));
                 reportProgressBar.Report(++CurrentProgress);
             }
+            */
+            #endregion --------Test two Dictionary Objects---------
+
+            RequestColumns colH = new RequestColumns();
+            RequestColumns colL = new RequestColumns();
+            RequestColumns colP = new RequestColumns();
+
+
+
+            newRequest = new RequestSheet(colH, colL, colP);
+            printDebugListBox.Report("Proceedure completed.");
             reportProgressBar.Report(0);
             printDebugListBox.Report(string.Format("Open Excel Async Ran for: {0}",
                 (DateTime.Now - timeStart).ToString("hh':'mm':'ss")));

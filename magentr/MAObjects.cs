@@ -16,6 +16,7 @@ namespace magentr
     {
         public RequestColumns Col1, Col2, Col3;
         //Instantiate an empty sheet object, which contains 3 column objects.
+        public RequestSheet() { }
         public RequestSheet(
             RequestColumns col1
             , RequestColumns col2
@@ -30,7 +31,8 @@ namespace magentr
 
     class RequestColumns
     {
-        //Instantiate an empty Column object, which contains 3 column objects.
+        //Instantiate an empty Column object, which contains column objects.
+         
     }
 
     class MAgents
