@@ -5,38 +5,48 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:magentr"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="MainWindow" Height="450" Width="848.2">
+    <Grid Margin="0,17,-0.4,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60*"/>
+            <RowDefinition Height="270*"/>
+            <RowDefinition Height="50*"/>
+        </Grid.RowDefinitions>
+
         <StackPanel Orientation="Horizontal" 
                     VerticalAlignment="Top"
-                    Margin="9">
+                    Margin="5,5,5,5" Grid.Row="0">
             <Button Content="Read New Request Form"
                     Width="160" Height="30"
                     Margin="9"
                     ToolTip="Load a new M/Agent Application .xlsx File from location."
                     Click="OnNewRequestClick"/>
         </StackPanel>
-        <ScrollViewer x:Name="svDebug" Height="220" Margin="5 0 5 0"
-                 IsEnabled="True" Background="DarkGray"
-                 Foreground="Black">
+        <ScrollViewer x:Name="svDebug" MinHeight="200" 
+                      MaxHeight="600" Margin="5,5,5,5"
+                 IsEnabled="True" Background="Black"
+                 Foreground="HotPink" Grid.Row="1">
             <ListBox x:Name="lbxDebug" >
                 <ListBoxItem>
                     Debug Window
                 </ListBoxItem>
             </ListBox>
         </ScrollViewer>
-        
-        <StackPanel Orientation="Horizontal" 
-                    VerticalAlignment="Bottom"
-                    Background="LightGray">
+
+        <Grid Height="30" Margin="0,0,0,5.2" Grid.Row="2"
+              VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
             <Label x:Name="lblStatus"
-                   Height="30" Width="150" Margin="2"
                    Content="Status"
-                   Background="Bisque"/>
-            <ProgressBar x:Name="pbarMain"
-                     Width="610" Height="30" Margin="18,2,2,2"
-                         Maximum="1000" Minimum="0"/>
-        </StackPanel>
-        
+                   Background="Bisque" Grid.Column="0"/>
+            <ProgressBar x:Name="pbarMain" Margin="5,0,5,0"
+                         Width="Auto"
+                         Maximum="1000" Minimum="0"
+                         Grid.Column="1"/>
+        </Grid>
+
     </Grid>
 </Window>

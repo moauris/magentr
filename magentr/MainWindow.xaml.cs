@@ -77,10 +77,10 @@ namespace magentr
         private void SyncVonExcel(FileInfo inputfile 
             , IProgress<int> reportProgressBar
             , IProgress<int> setProgressBarMax
-            , IProgress<string> printDebugListBox
-            , out RequestSheet newRequest)
+            , IProgress<string> printDebugListBox)
+            //, out RequestSheet newRequest)
         {
-            newRequest = new RequestSheet();
+            //newRequest = new RequestSheet();
             dictRequestRawData
             = new Dictionary<string, string>();
             dictCheckBox
@@ -108,7 +108,7 @@ namespace magentr
             void RangeToDict(EXCEL.Range TargetRange)
             {
                 dictRequestRawData[TargetRange.Address]
-                = (string)TargetRange.Value;
+                = Convert.ToString(TargetRange.Value);
             }
 
             //Cell Range: D5, S163
@@ -122,9 +122,13 @@ namespace magentr
 
             foreach (EXCEL.Range r in FormArea)
             {
-                if(r.Value == null)
+                if(r.Value != null)
                 {
                     RangeToDict(r);
+                }
+                else
+                {
+                    dictRequestRawData[r.Address] = "0";
                 }
                 reportProgressBar.Report(++FormAreaCurrentCount);
             }
@@ -188,7 +192,7 @@ namespace magentr
             Marshal.ReleaseComObject(xlSht);
             //Marshal.ReleaseComObject(xlRange);
             #region --------Test two Dictionary Objects---------
-            /*
+            
             setProgressBarMax.Report(dictRequestRawData.Count);
             int CurrentProgress = 0;
             foreach (KeyValuePair<string, string> k in dictRequestRawData)
@@ -203,16 +207,49 @@ namespace magentr
                 printDebugListBox.Report(string.Format("{0,-7}|{1}", k.Key, k.Value));
                 reportProgressBar.Report(++CurrentProgress);
             }
-            */
-            #endregion --------Test two Dictionary Objects---------
 
+            #endregion --------Test two Dictionary Objects---------
+            //MessageBox.Show("Click to Continue.");
+            string[] col1_NetLoc = new string[4]
+            {
+                "$H$42","$J$42",
+                "$H$43","$J$43"
+            };
+            string[] col1_NetAre = new string[8]
+            {
+                "$H$44","$J$44",
+                "$H$45","$J$45",
+                "$H$46","$J$46",
+                "$H$47","$J$47"
+            };
+            string[] range1 = new string[13]
+            {
+                "$H$51","$H$52","$H$53","$H$54","$H$55",
+                "$H$56","$H$57","$H$58","$H$59","$H$60",
+                "$H$61","$H$62","$H$63"
+            };
+            string[] oscheck1 = new string[5]
+            {
+                "$H$57","$J$57",
+                "$H$58","$J$58",
+                "$H$59"
+            };
+            MAServers server1 = new MAServers
+                (
+                    range1
+                    , oscheck1
+                    , col1_NetLoc
+                    , col1_NetAre
+                    , dictRequestRawData
+                    , dictCheckBox
+                    , MAServers.agCluster.PRI
+                );
+            printDebugListBox.Report(server1.FullInfo());
             RequestColumns colH = new RequestColumns();
             RequestColumns colL = new RequestColumns();
             RequestColumns colP = new RequestColumns();
 
-
-
-            newRequest = new RequestSheet(colH, colL, colP);
+            //newRequest = new RequestSheet(colH, colL, colP);
             printDebugListBox.Report("Proceedure completed.");
             reportProgressBar.Report(0);
             printDebugListBox.Report(string.Format("Open Excel Async Ran for: {0}",
