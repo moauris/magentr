@@ -11,6 +11,7 @@ using EXCEL = Microsoft.Office.Interop.Excel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Net;
+using System.Data.OleDb;
 
 namespace magentr
 {
@@ -20,11 +21,13 @@ namespace magentr
     public partial class MainWindow : Window
     {
         public string dirNewRequest = "";
-        private Dictionary<string, string> dictRequestRawData
+        private Dictionary<string, string> dictRequestRawData //Stores Cell Info
             = new Dictionary<string, string>();
-        private Dictionary<string, string> dictCheckBox
+        private Dictionary<string, string> dictCheckBox       //Stores Checkbox Info
             = new Dictionary<string, string>();
-        //private delegate void ConvertRange(EXCEL.Range TargetRange);
+
+        public string RequestBango = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -33,14 +36,18 @@ namespace magentr
         private void OnNewRequestClick(object sender, RoutedEventArgs e)
         {
             //Initiate Load New Request Form Procedure
-            // Step 001 Open file
+            #region Open File Dialog
             DateTime timeStart = DateTime.Now;
             OpenFileDialog OpenFileNew = new OpenFileDialog();
             OpenFileNew.DefaultExt = ".xlsx;.xls";
             OpenFileNew.Filter = "Excel Worksheet (.xls;.xlsx)|*.xls;*.xlsx";
             OpenFileNew.ShowDialog();
-            lbxDebug.Items.Add(OpenFileNew + " Selected.");
+            lbxDebug.Items.Add(OpenFileNew.FileName + " Selected.");
             dirNewRequest = OpenFileNew.FileName;
+            FileInfo RequestFileInfo = new FileInfo(OpenFileNew.FileName);
+            RequestBango = RequestFileInfo.Name;
+
+            #endregion Open File Dialog
             if (dirNewRequest != "")
             {
                 FetchNewRequest(dirNewRequest);
@@ -98,7 +105,6 @@ namespace magentr
             EXCEL.Workbooks xlWorkbooks = xlApp.Workbooks;                  reportProgressBar.Report(40);
             EXCEL.Workbook xlWbk = xlWorkbooks.Open(inputfile.FullName);    reportProgressBar.Report(60);
             EXCEL.Worksheet xlSht = xlWbk.ActiveSheet;                      reportProgressBar.Report(80);
-            // EXCEL.Range xlRange = xlSht.UsedRange;
             reportProgressBar.Report(100);
             Debug.Print("Loading Completed.");
 
@@ -113,61 +119,52 @@ namespace magentr
             }
 
             //Cell Range: D5, S163
-            EXCEL.Range FormArea = xlSht.Range["D5", "S163"];
+            EXCEL.Range FormArea = xlSht.Range["D5", "S163"]; //This is too many, Get only non null ones.
+            IEnumerable<EXCEL.Range> ieFilledRange =
+                from EXCEL.Range r in FormArea
+                where r.Value != null
+                select r;
             printDebugListBox.Report("Calculating Total Form Area Ranges");
             int FormAreaRangCount = FormArea.Count;
-            int FormAreaCurrentCount = 0;
-            printDebugListBox.Report("Total Form Area Ranges : " + FormAreaRangCount);
-            setProgressBarMax.Report(FormAreaRangCount);
-            reportProgressBar.Report(FormAreaCurrentCount);
+            int WorkLoad_Total = ieFilledRange.Count();
+            int WorkdLoad_Current = 0;
+            printDebugListBox.Report(string.Format(
+                "Total Form Area Ranges Valid/Total: {0}/{1}"
+                , WorkLoad_Total, FormAreaRangCount));
+            setProgressBarMax.Report(WorkLoad_Total);
+            reportProgressBar.Report(WorkdLoad_Current);
 
-            foreach (EXCEL.Range r in FormArea)
+            foreach (EXCEL.Range r in ieFilledRange)
             {
-                if(r.Value != null)
-                {
-                    RangeToDict(r);
-                }
-                else
-                {
-                    dictRequestRawData[r.Address] = "0";
-                }
-                reportProgressBar.Report(++FormAreaCurrentCount);
+                RangeToDict(r);
+                reportProgressBar.Report(++WorkdLoad_Current);
             }
             printDebugListBox.Report("Sync Target Area Complete.");
             //Trying to fetch form public Dictionary Object.
-
             EXCEL.Shapes xlShapes = xlSht.Shapes;
 
-            int WorkLoad_Total = xlShapes.Count;
+            WorkLoad_Total = xlShapes.Count;
             setProgressBarMax.Report(WorkLoad_Total);
-            int WorkdLoad_Current = 0;
+            WorkdLoad_Current = 0;
 
             IEnumerable<EXCEL.Shape> xlCheckBoxes =
                 from EXCEL.Shape s in xlShapes
                 where s.Name.Contains("チェック") //v0.0.0.1 Need a regex to match both en and jp version.
+                && (double)s.OLEFormat.Object.Value == 1 //Select only selected Value
                 select s;
 
+            WorkLoad_Total = xlCheckBoxes.Count();
             //Dictionary<string, string> dicCheckedBoxes = 
             //    new Dictionary<string, string>(); //combine with the dictRequestRawData object
 
-            setProgressBarMax.Report(xlCheckBoxes.Count());
+            setProgressBarMax.Report(WorkLoad_Total);
 
             foreach(EXCEL.Shape s in xlCheckBoxes)
             {
-                //s.TopLeftCell.Interior.Color = EXCEL.XlRgbColor.rgbRed;
-                //printDebugListBox.Report(string.Format("|{0,-30}|{1,-30}|{2,-30}|"
-                //    , s.Name
-                //    , (string)s.TopLeftCell.Offset[0, 1].Value
-                //    , ((double)s.OLEFormat.Object.Value).ToString()));
-                if ((double)s.OLEFormat.Object.Value == 1)
-                {
-                    dictCheckBox.Add(
-                        s.TopLeftCell.Address
-                        , (string)s
-                        .TopLeftCell
-                        .Offset[0, 1]
-                        .Value);
-                }
+                dictCheckBox.Add(
+                    s.TopLeftCell.Address
+                    , (string)s.TopLeftCell
+                    .Offset[0, 1].Value);
                 reportProgressBar.Report(++WorkdLoad_Current);
             }
             /* Testing if CheckBox Function Works
@@ -193,7 +190,7 @@ namespace magentr
             Marshal.ReleaseComObject(xlSht);
             //Marshal.ReleaseComObject(xlRange);
             #region --------Test two Dictionary Objects---------
-            
+            /* Below Are Listing of all contents of the two objects.
             setProgressBarMax.Report(dictRequestRawData.Count);
             int CurrentProgress = 0;
             foreach (KeyValuePair<string, string> k in dictRequestRawData)
@@ -208,9 +205,147 @@ namespace magentr
                 printDebugListBox.Report(string.Format("{0,-7}|{1}", k.Key, k.Value));
                 reportProgressBar.Report(++CurrentProgress);
             }
-
+            */
+            //Generating Object Count Report.
+            string ReportDictionaryCount = "For {0}, there are {1} elements.";
+            printDebugListBox.Report(
+                string.Format(ReportDictionaryCount
+                , "dictRequestRawData"
+                , dictRequestRawData.Count));
+            printDebugListBox.Report(
+                string.Format(ReportDictionaryCount
+                , "dictCheckBox"
+                , dictCheckBox.Count));
             #endregion --------Test two Dictionary Objects---------
-            MessageBox.Show("Click to Continue.");
+            #region Connect to Database with Connection String
+            OleDbConnection conn = new OleDbConnection();
+            conn.ConnectionString = @"Provider=Microsoft.ACE.OLEDB.12.0" +
+                @";Data Source=C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
+            conn.Open();
+            #region Sync to tbRequestForm
+            OleDbCommand SelectRequest = new OleDbCommand(
+                "SELECT tbRequestForm.* FROM tbRequestForm WHERE tbRequestForm.;");
+
+            OleDbCommand InsertRequest = new OleDbCommand(
+                @"INSERT INTO tbRequestForm 
+                   (RequestBango, RequestFileName
+                    , DateApplied, Applier
+                    , Email, Phone, Approver, Comment) 
+                  Values (@requestBango, @requestFileName
+                    , @dateApplied, @applier
+                    , @email ,@phone, @approver
+                    , @comment)", conn);
+            //Make a procedure to sync values and return "" when keys cannot be found.
+            string ValidateDict(string KeyVal)
+            {
+                string result = dictRequestRawData.ContainsKey(KeyVal) ? dictRequestRawData[KeyVal] : "";
+                return result;
+            }
+            InsertRequest.CommandType = System.Data.CommandType.Text;
+            InsertRequest.Parameters.AddWithValue("@requestBango", RequestBango.Substring(0,15));
+            InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
+            InsertRequest.Parameters.AddWithValue("@dateApplied"
+                , DateTime.Parse(ValidateDict("$H$7")));
+            InsertRequest.Parameters.AddWithValue("@applier", ValidateDict("$H$8"));
+            InsertRequest.Parameters.AddWithValue("@email", ValidateDict("$H$9"));
+            InsertRequest.Parameters.AddWithValue("@phone", ValidateDict("$H$10"));
+            InsertRequest.Parameters.AddWithValue("@approver", ValidateDict("$H$11"));
+            InsertRequest.Parameters.AddWithValue("@comment", ValidateDict("$E$161"));
+            printDebugListBox.Report(InsertRequest.CommandText);
+            InsertRequest.ExecuteNonQuery();
+            #endregion Sync to tbRequestForm
+            InsertRequest = new OleDbCommand(
+                @"INSERT INTO tbAgents 
+                    (RequestFileName, RequestBango, ApplyType
+                    , ChangePoint, SIer, ServerPIC, SystemID
+                    , SystemName, SystemSubName, NetworkLocation
+                    , NetworkArea, ServerVIP, ServerPRI, ServerSEC
+                    , MStMACommunicationPort, MA_InstallDate
+                    , MS_Connection, MS_Connection, JobCount
+                    , HasCallorder, HasFirewall, MA_Version
+                    , IsFirstTime, IsProduction, TestDoneDate
+                    , CostFrom, CostFromSystemName
+                    , CostFromSubSystemName, HasSundayJobs
+                    , HasRelatedSystems, RelatedSystemID
+                    , RelatedSystemName, RelatedSystemSubName
+                    , RelatedSystemDatacenter 
+                    , MAtMSCommunicationPort
+                    , MSVIP, MSPRI, MSSEC
+                ) VALUES (
+                    @requestFileName, @requestBango, @applyType
+                    , @changePoint, @sIer, @serverPIC, @systemID
+                    , @systemName, @systemSubName, @networkLocation
+                    , @networkArea, @serverVIP, @serverPRI, @serverSEC
+                    , @mStMACommunicationPort, @mA_InstallDate
+                    , @mS_Connection, @mS_Connection, @jobCount
+                    , @hasCallorder, @hasFirewall, @mA_Version
+                    , @isFirstTime, @isProduction, @testDoneDate
+                    , @costFrom, @costFromSystemName
+                    , @costFromSubSystemName, @hasSundayJobs
+                    , @hasRelatedSystems, @relatedSystemID
+                    , @relatedSystemName, @relatedSystemSubName
+                    , @relatedSystemDatacenter 
+                    , @mAtMSCommunicationPort
+                    , @mSVIP, @mSPRI, @mSSEC);", conn);
+            Dictionary<string, string> CheckBoxGroup = new Dictionary<string, string>();
+            InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
+            InsertRequest.Parameters.AddWithValue("@requestBango", RequestBango.Substring(0, 15));
+
+            CheckBoxGroup.Add("$H$32", "");
+            CheckBoxGroup.Add("$J$32", "");
+            CheckBoxGroup.Add("$H$33", "");
+            string CbxVal =
+                (string)(from KeyValuePair<string, string> Checked in dictCheckBox
+                         from KeyValuePair<string, string> Target in CheckBoxGroup
+                         where Checked.Key == Target.Key
+                         select Checked).First().Value;
+
+            InsertRequest.Parameters.AddWithValue("@applyType", CbxVal);
+            /*
+            InsertRequest.Parameters.AddWithValue("@changePoint");
+            InsertRequest.Parameters.AddWithValue("@sIer");
+            InsertRequest.Parameters.AddWithValue("@serverPIC");
+            InsertRequest.Parameters.AddWithValue("@systemID");
+            InsertRequest.Parameters.AddWithValue("@systemName");
+            InsertRequest.Parameters.AddWithValue("@systemSubName");
+            InsertRequest.Parameters.AddWithValue("@networkLocation");
+            InsertRequest.Parameters.AddWithValue("@networkArea");
+            InsertRequest.Parameters.AddWithValue("@serverVIP");    
+            InsertRequest.Parameters.AddWithValue("@serverPRI");
+            InsertRequest.Parameters.AddWithValue("@serverSEC");
+            InsertRequest.Parameters.AddWithValue("@mStMACommunicationPort");
+            InsertRequest.Parameters.AddWithValue("@mA_InstallDate");
+            InsertRequest.Parameters.AddWithValue("@mS_Connection");
+            InsertRequest.Parameters.AddWithValue("@mS_Connection");
+            InsertRequest.Parameters.AddWithValue("@jobCount");
+            InsertRequest.Parameters.AddWithValue("@hasCallorder");
+            InsertRequest.Parameters.AddWithValue("@hasFirewall");
+            InsertRequest.Parameters.AddWithValue("@mA_Version");
+            InsertRequest.Parameters.AddWithValue("@isFirstTime");
+            InsertRequest.Parameters.AddWithValue("@isProduction");
+            InsertRequest.Parameters.AddWithValue("@testDoneDate");
+            InsertRequest.Parameters.AddWithValue("@costFrom");
+            InsertRequest.Parameters.AddWithValue("@costFromSystemName");
+            InsertRequest.Parameters.AddWithValue("@costFromSubSystemName");
+            InsertRequest.Parameters.AddWithValue("@hasSundayJobs");
+            InsertRequest.Parameters.AddWithValue("@hasRelatedSystems");
+            InsertRequest.Parameters.AddWithValue("@relatedSystemID");
+            InsertRequest.Parameters.AddWithValue("@relatedSystemName");
+            InsertRequest.Parameters.AddWithValue(" @relatedSystemSubName");
+            InsertRequest.Parameters.AddWithValue("@relatedSystemDatacenter");
+            InsertRequest.Parameters.AddWithValue("@mAtMSCommunicationPort");
+            InsertRequest.Parameters.AddWithValue("@mSVIP");
+            InsertRequest.Parameters.AddWithValue("@mSPRI");
+            InsertRequest.Parameters.AddWithValue("@mSSEC");
+            */
+            //AdaRequest.InsertCommand = InsertCommand;
+            //AdaRequest.InsertCommand.ExecuteNonQuery();
+
+            printDebugListBox.Report(InsertRequest.CommandText);
+            InsertRequest.ExecuteNonQuery();
+            conn.Close();
+            return;
+            #endregion  Connect to Database with Connection String
             string[] col1_NetLoc = new string[4]
             {
                 "$H$42","$J$42",
