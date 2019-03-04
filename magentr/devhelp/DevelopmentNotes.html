@@ -115,6 +115,24 @@
                 ...which causes the program to abend with Key Already added.
                 So the list needs to be splited, still. one formarea, one checkbox.
             </p>
+            <h3>What about directly to a database</h3>
+            <p>I'm now very confused about the structure of the code. It doesn't seem to be a neccessity to 
+            first get the information into C# Managed memories, and then all together into a database. If Database is always an option. <br />
+                <strong>Why not just connect to a database in the first place.</strong><br />
+            No more type conversions, no more object construction errors. No more disgusting hierarchical inherit stuff. </p>
+            <p>
+                Currently, by sycning the Excel Document, the CRL generates two managable dictionary objects.
+                Currently, there was an intermediate object hierarchy that trys to sync the worksheet content.
+                But by using the database implementations, 
+                we can use the database as a way to get and set 
+                the all level objects without having to construct any of them in the first place.<br />
+                All Levels of M/Agent objects still exists, but their constructor takes get and set methods, where:
+                <ul>
+                    <li>When set is called: Generates an SQL object that ready to sync into the database.</li>
+                    <li>When get is called: Generates a string block for the information of that M/Agent Request object.</li>
+                </ul>
+                
+            </p>
         </div>
     </body>
 </html>
