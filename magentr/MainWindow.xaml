@@ -41,7 +41,8 @@
             </Grid.ColumnDefinitions>
             <Label x:Name="lblStatus"
                    Content="Status"
-                   Background="Bisque" Grid.Column="0"/>
+                   Background="Bisque" Grid.Column="0"
+                   Margin="5 0 0 0"/>
             <ProgressBar x:Name="pbarMain" Margin="5,0,5,0"
                          Width="Auto"
                          Maximum="1000" Minimum="0"

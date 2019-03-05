@@ -51,7 +51,7 @@
                 Success!
 
                 as shown on the right, all shape's top left cell are colorized as Red:
-                <img class="demo_horizaontal_strip" src="resources/colorshapestopleftred.jpg"/>
+                <img class="demo_horizaontal_strip" src="resources/colorshapestopleftred.jpg" />
             </p>
             <p>This means that it can fetch the data within a certain cell using LINQ.</p>
             <h3>Making of Shape Fetching method for Each Group</h3>
@@ -67,7 +67,7 @@
                 C# cannot refer to COMS Object to test against another COMS Object. Even if they refer to the same COMS
                 C# still sees them as two different Objects, and won't trigger the if true statements.<br />
                 If using the Used Range method, then the object cannot use a [cell1, cell2] structure to fetch the cell object in fixed value,
-                it has to be used like an iteration. But, the Worksheet.Range[] can be used like this, so there is really no need to 
+                it has to be used like an iteration. But, the Worksheet.Range[] can be used like this, so there is really no need to
                 specify the used Range Object again, I'm going to do a specification mapping anyways.
 
             </p>
@@ -96,8 +96,10 @@
                 Different from the first time conundrum, I now know about a way to fetch "Address" (Such as "$H$37"), and link it to a value.
                 Even Check Box Items can do that. Because I know how to use a dictionary Object.
             </p>
-            <p>The structure then becomes more simple, make a "load" method that takes an excel object, and "spew out" a Dictionary Object, which is to be 
-            used by all the entire procedure.</p>
+            <p>
+                The structure then becomes more simple, make a "load" method that takes an excel object, and "spew out" a Dictionary Object, which is to be
+                used by all the entire procedure.
+            </p>
             <p>
                 So the testing for the process run by using the <br />
                 <code>Do { Get-Process -Name Excel ; Start-Sleep -Seconds 2 } While ($true)</code><br />
@@ -116,27 +118,58 @@
                 So the list needs to be splited, still. one formarea, one checkbox.
             </p>
             <h3>What about directly to a database</h3>
-            <p>I'm now very confused about the structure of the code. It doesn't seem to be a neccessity to 
-            first get the information into C# Managed memories, and then all together into a database. If Database is always an option. <br />
+            <p>
+                I'm now very confused about the structure of the code. It doesn't seem to be a neccessity to
+                first get the information into C# Managed memories, and then all together into a database. If Database is always an option. <br />
                 <strong>Why not just connect to a database in the first place.</strong><br />
-            No more type conversions, no more object construction errors. No more disgusting hierarchical inherit stuff. </p>
+                No more type conversions, no more object construction errors. No more disgusting hierarchical inherit stuff.
+            </p>
             <p>
                 Currently, by sycning the Excel Document, the CRL generates two managable dictionary objects.
                 Currently, there was an intermediate object hierarchy that trys to sync the worksheet content.
-                But by using the database implementations, 
-                we can use the database as a way to get and set 
+                But by using the database implementations,
+                we can use the database as a way to get and set
                 the all level objects without having to construct any of them in the first place.<br />
                 All Levels of M/Agent objects still exists, but their constructor takes get and set methods, where:
                 <ul>
                     <li>When set is called: Generates an SQL object that ready to sync into the database.</li>
                     <li>When get is called: Generates a string block for the information of that M/Agent Request object.</li>
                 </ul>
-                
+
             </p>
             <h3>Database Plan Progress</h3>
-            <p>Progress 1: Only synced non-null range. Target Range downed from 2544, 
-            to 414. Loading time is now 4 seconds for all cell Objects.</p>
-
+            <p>
+                Progress 1: Only synced non-null range. Target Range downed from 2544,
+                to 414. Loading time is now 4 seconds for all cell Objects.
+            </p>
+            <p>I can not successfully sync into the database with the request by reusing the same insert command object.</p>
+            <p>It's either that or, I need to close the connection, then open it again.</p>
+            <p>
+                But, for the most part, it looks like this: <br />
+                Request Table before Update Automatically:
+                <img class="demo_horizaontal_strip" src="resources/databasebeforesync.jpg" /><br />
+                Then there is the same table after automatic update:
+                <img class="demo_horizaontal_strip" src="resources/databaseaftersync.jpg" />
+            </p>
+            <p>
+                But the problem here is that it gets a little bit buggy with the reuse of the same variable.
+                <br />
+                <code>
+                    System.Data.OleDb.OleDbException: 'Duplicate output destination 'MS_Connection'.'
+                </code>
+                <br />
+            </p>
+            <a href="https://stackoverflow.com/questions/46434189/duplicate-output-destination-oledb">
+                StackOverFlow: C# Duplicate-output-desitinationn-oledb
+            </a>
+            <p>Try Clear the parameters in the insert command and see it if helps.</p>
+            <p>This is so disgusting, I can't imagine this whole project getting stopped only because the database refuse to sync.
+            Let's try the using statement to reinitialize the connection object.
+            Resolved: Looks like one connection object must be disposed before you can re-use it.
+            </p>
+            <p>DateTime Object returns with Type Mismatch error: Becareful with DateTime.Now, because if the database only takes
+            YYYY-MM-DD format, DateTime.Now represents a time type varaible in Database.
+            If we use DateTime.Today, it will return a date variable, and can be accepted.</p>
         </div>
     </body>
 </html>
