@@ -266,9 +266,19 @@ namespace magentr
             }
 
             printDebugListBox.Report(SyncColumn(connString, "H", "J"));
+            printDebugListBox.Report(SyncServer(connString, "H", "J", 51));
+            printDebugListBox.Report(SyncServer(connString, "H", "J", 64));
+
             printDebugListBox.Report(SyncColumn(connString, "L", "N"));
+            printDebugListBox.Report(SyncServer(connString, "L", "N", 51));
+            printDebugListBox.Report(SyncServer(connString, "L", "N", 64));
+
             printDebugListBox.Report(SyncColumn(connString, "P", "R"));
-            
+            printDebugListBox.Report(SyncServer(connString, "P", "R", 51));
+            printDebugListBox.Report(SyncServer(connString, "P", "R", 64));
+
+
+
             #endregion  Connect to Database with Connection String
 
             printDebugListBox.Report("Proceedure completed.");
@@ -301,22 +311,22 @@ namespace magentr
             }//"31|32|33|34|35|36|37|"
 
             AllRows = AllRows.Remove(AllRows.Length - 1, 1); //"31|32|33|34|35|36|37"
-            Debug.Print(AllRows);
+            //Debug.Print(AllRows);
             string rxRange = string.Format(@"\$[{0}-{1}]\$({2})"
                 , firstCol
                 , secondCol
                 , AllRows);
 
-            Debug.Print(rxRange);
+            //Debug.Print(rxRange);
             Regex rxRangeMatch = new Regex(rxRange);
             string result = "未選択";
             try
             {
-                Debug.Print(string.Format("Testing against {0}", rxRangeMatch.ToString()));
+                //Debug.Print(string.Format("Testing against {0}", rxRangeMatch.ToString()));
                 var EnumResult = from KeyValuePair<string, string> Checked in dictCheckBox
                                  where rxRangeMatch.IsMatch(Checked.Key)
                                  select Checked;
-                Debug.Print(string.Format("Checked Box Count: {0}", EnumResult.Count()));
+                //Debug.Print(string.Format("Checked Box Count: {0}", EnumResult.Count()));
                 switch(EnumResult.Count())
                 {
                     case 0:
@@ -354,6 +364,57 @@ namespace magentr
             string resultstring =
                 dictRequestRawData.ContainsKey(KeyVal) ? dictRequestRawData[KeyVal] : "1900-01-01";
             return DateTime.Parse(resultstring);
+        }
+
+        private string SyncServer
+            ( string ConnectionString
+            , string ColumnStart
+            , string ColumnFinish
+            , int StartRow)
+        {
+            //Before Sync, Judge if any of the must fill values are invalid, 
+            //if yes, direcly return Error Message without connecting to Database.
+            //Rule No1: Row[0] must be non-empty.
+            //We first judge these values, in the sync we can directly use these string variables
+            // VIP = 49 + 2
+            // PRI = 51 + 13
+            // SEC = 64 + 13
+            string HostName = ValidDic("$" + ColumnStart + "$" + StartRow);
+            if (HostName.Length < 8)
+                return string.Format("Invalid Hostname \"{0}\" at ${1}${2} \r\n" +
+                    "Sync Terminated.", HostName, ColumnStart, StartRow);
+            using (OleDbConnection conn = new OleDbConnection(ConnectionString))
+            {
+                conn.Open();
+                var InsertRequest = new OleDbCommand(
+@"INSERT INTO tbServers (
+ Hostname,  IPAddress,  Maker,  Model,  CPUCount,  CPUMicoprocessor,  OS,  Version,  Bit,  ClusterBox,  ClusterIndex
+) VALUES (
+@hostname, @iPAddress, @maker, @model, @cPUCount, @cPUMicoprocessor, @oS, @version, @bit, @clusterBox, @clusterIndex
+);", conn);
+                InsertRequest.Parameters.AddWithValue("@hostname", HostName);/*
+                InsertRequest.Parameters.AddWithValue("@iPAddress", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@maker", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@model", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@cPUCount", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@oS", CheckBoxValue(ColumnStart + StartRow + ":" + ColumnFinish + (StartRow = 2 + StartRow)));
+                InsertRequest.Parameters.AddWithValue("@version", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@bit", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@clusterBox", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@clusterIndex", ValidDic("$" + ColumnStart + ":$" + ++StartRow));*/
+
+                Debug.Print(InsertRequest.ToString());
+                try
+                {
+                    int RowsAffected = InsertRequest.ExecuteNonQuery();
+                    return "Server Successful, Rows Affected: " + RowsAffected;
+                }
+                catch (OleDbException ex)
+                {
+                    return "Server Sync Failed:" + ex.Message;
+                }
+            }
         }
 
         private string SyncColumn
@@ -394,18 +455,14 @@ rlnFileName,  rlnBango,  ApplyType,  ChangePoint,  SIer,  ServerPIC,  SystemID, 
 
                 InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
                 InsertRequest.Parameters.AddWithValue("@requestBango", RequestBango.Substring(0, 15));
-
                 InsertRequest.Parameters.AddWithValue("@applyType", RegisterType);
-
                 InsertRequest.Parameters.AddWithValue("@changePoint", CheckBoxValue(ColumnStart + "34:" + ColumnFinish + "36"));
                 InsertRequest.Parameters.AddWithValue("@sIer", ValidDic("$" + ColumnStart + "$37"));
                 InsertRequest.Parameters.AddWithValue("@serverPIC", ValidDic("$" + ColumnStart + "$38"));
                 InsertRequest.Parameters.AddWithValue("@systemID", ValidDic("$" + ColumnStart + "$39"));
                 InsertRequest.Parameters.AddWithValue("@systemName", ValidDic("$" + ColumnStart + "$40"));
                 InsertRequest.Parameters.AddWithValue("@systemSubName", ValidDic("$" + ColumnStart + "$41"));
-
                 InsertRequest.Parameters.AddWithValue("@networkLocation", CheckBoxValue(ColumnStart + "42:" + ColumnFinish + "43"));
-
                 InsertRequest.Parameters.AddWithValue("@networkArea", CheckBoxValue(ColumnStart + "44:" + ColumnFinish + "47"));
                 InsertRequest.Parameters.AddWithValue("@serverVIP", ValidDic("$" + ColumnStart + "$49"));
                 InsertRequest.Parameters.AddWithValue("@serverPRI", PhysicalHostPRI);
@@ -442,9 +499,9 @@ rlnFileName,  rlnBango,  ApplyType,  ChangePoint,  SIer,  ServerPIC,  SystemID, 
                 }
                 catch (OleDbException ex)
                 {
-                    return "Agent Table Sync Failed:" + ex.Message;
+                    return "Agent Table Sync Failed: " + ex.Message;
                 }
-
+                
             }
 
         }
