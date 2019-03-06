@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Net;
 using System.Data.OleDb;
+using System.Text.RegularExpressions;
 
 namespace magentr
 {
@@ -225,8 +226,18 @@ namespace magentr
 
             string ValidDic(string KeyVal)
             {
-                string result = dictRequestRawData.ContainsKey(KeyVal) ? dictRequestRawData[KeyVal] : "";
+
+                string result = dictRequestRawData.ContainsKey(KeyVal) ? dictRequestRawData[KeyVal] : "未入力";
+                //Need to Validate "N/A" String =? @"N/?A"
+                Regex rx = new Regex(@"N/?A");
+                if (rx.IsMatch(result)) result = "未入力";
                 return result;
+            }
+            DateTime ValidDate(string KeyVal)
+            {
+                string resultstring = 
+                    dictRequestRawData.ContainsKey(KeyVal) ? dictRequestRawData[KeyVal] : "1900-01-01";
+                return DateTime.Parse(resultstring);
             }
 
             using (OleDbConnection conn = new OleDbConnection(connString))
@@ -290,66 +301,52 @@ namespace magentr
                     , @mS_Connection, @jobStartDate);", conn);
 
 
-                Dictionary<string, string> CheckBoxGroup = new Dictionary<string, string>();
+                //Dictionary<string, string> CheckBoxGroup = new Dictionary<string, string>();
                 InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
                 InsertRequest.Parameters.AddWithValue("@requestBango", RequestBango.Substring(0, 15));
 
-                CheckBoxGroup.Add("$H$32", ""); CheckBoxGroup.Add("$J$32", "");
-                CheckBoxGroup.Add("$H$33", "");
-                printDebugListBox.Report(CheckBoxValue(CheckBoxGroup));
-                InsertRequest.Parameters.AddWithValue("@applyType", CheckBoxValue(CheckBoxGroup)); CheckBoxGroup.Clear();
+                //CheckBoxGroup.Add("$H$32", ""); CheckBoxGroup.Add("$J$32", "");
+                //CheckBoxGroup.Add("$H$33", "");
+                //printDebugListBox.Report(CheckBoxValue("H32:J33"));
+                InsertRequest.Parameters.AddWithValue("@applyType", CheckBoxValue("H32:J33"));
 
-                CheckBoxGroup.Add("$H$34", ""); CheckBoxGroup.Add("$J$34", "");
-                CheckBoxGroup.Add("$H$35", ""); CheckBoxGroup.Add("$J$35", "");
-                CheckBoxGroup.Add("$H$36", ""); CheckBoxGroup.Add("$J$36", "");
-
-                InsertRequest.Parameters.AddWithValue("@changePoint", CheckBoxValue(CheckBoxGroup)); CheckBoxGroup.Clear();
+                InsertRequest.Parameters.AddWithValue("@changePoint", CheckBoxValue("H34:J36"));
                 InsertRequest.Parameters.AddWithValue("@sIer", ValidDic("$H$37"));
                 InsertRequest.Parameters.AddWithValue("@serverPIC", ValidDic("$H$38"));
                 InsertRequest.Parameters.AddWithValue("@systemID", ValidDic("$H$39"));
                 InsertRequest.Parameters.AddWithValue("@systemName", ValidDic("$H$40"));
                 InsertRequest.Parameters.AddWithValue("@systemSubName", ValidDic("$H$41"));
 
-                CheckBoxGroup.Add("$H$42", ""); CheckBoxGroup.Add("$J$42", "");
-                CheckBoxGroup.Add("$H$43", ""); CheckBoxGroup.Add("$J$43", "");
+                InsertRequest.Parameters.AddWithValue("@networkLocation", CheckBoxValue("H42:J43"));
 
-                InsertRequest.Parameters.AddWithValue("@networkLocation", CheckBoxValue(CheckBoxGroup)); CheckBoxGroup.Clear();
-
-                CheckBoxGroup.Add("$H$44", ""); CheckBoxGroup.Add("$J$44", "");
-                CheckBoxGroup.Add("$H$45", ""); CheckBoxGroup.Add("$J$45", "");
-                CheckBoxGroup.Add("$H$46", ""); CheckBoxGroup.Add("$J$46", "");
-                CheckBoxGroup.Add("$H$47", ""); CheckBoxGroup.Add("$J$47", "");
-
-                InsertRequest.Parameters.AddWithValue("@networkArea", "test");
-                InsertRequest.Parameters.AddWithValue("@serverVIP", "test");
-                InsertRequest.Parameters.AddWithValue("@serverPRI", "test");
-                InsertRequest.Parameters.AddWithValue("@serverSEC", "test");
-                InsertRequest.Parameters.AddWithValue("@mStMACommunicationPort", "test");
-                InsertRequest.Parameters.AddWithValue("@mA_InstallDate", DateTime.Parse("2017-06-01"));
-                InsertRequest.Parameters.AddWithValue("@mS_Connection", "test");
-                InsertRequest.Parameters.AddWithValue("@jobStartDate", DateTime.Parse("2017-06-01"));
-                InsertRequest.Parameters.AddWithValue("@jobCount", "test");
-                InsertRequest.Parameters.AddWithValue("@hasCallorder", "test");
-                InsertRequest.Parameters.AddWithValue("@hasFirewall", "test");
-                InsertRequest.Parameters.AddWithValue("@mA_Version", "test");
-                InsertRequest.Parameters.AddWithValue("@isFirstTime", "test");
-                InsertRequest.Parameters.AddWithValue("@isProduction", "test");
-                InsertRequest.Parameters.AddWithValue("@testDoneDate", DateTime.Today);
-                InsertRequest.Parameters.AddWithValue("@costFrom", "");
-                InsertRequest.Parameters.AddWithValue("@costFromSystemName", "test");
-                InsertRequest.Parameters.AddWithValue("@costFromSubSystemName", "test");
-                InsertRequest.Parameters.AddWithValue("@hasSundayJobs", "test");
-                InsertRequest.Parameters.AddWithValue("@hasRelatedSystems", "test");
-                InsertRequest.Parameters.AddWithValue("@relatedSystemID", "test");
-                InsertRequest.Parameters.AddWithValue("@relatedSystemName", "test");
-                InsertRequest.Parameters.AddWithValue("@relatedSystemSubName", "test");
-                InsertRequest.Parameters.AddWithValue("@relatedSystemDatacenter", "test");
-                InsertRequest.Parameters.AddWithValue("@mAtMSCommunicationPort", "test");
-                InsertRequest.Parameters.AddWithValue("@mSVIP", "test");
-                InsertRequest.Parameters.AddWithValue("@mSPRI", "test");
-                InsertRequest.Parameters.AddWithValue("@mSSEC", "test");
-
-
+                InsertRequest.Parameters.AddWithValue("@networkArea", CheckBoxValue("H44:J47"));
+                InsertRequest.Parameters.AddWithValue("@serverVIP", ValidDic("$H$49"));
+                InsertRequest.Parameters.AddWithValue("@serverPRI", ValidDic("$H$51"));
+                InsertRequest.Parameters.AddWithValue("@serverSEC", ValidDic("$H$64"));
+                InsertRequest.Parameters.AddWithValue("@mStMACommunicationPort", ValidDic("$H$77"));
+                InsertRequest.Parameters.AddWithValue("@mA_InstallDate", ValidDate("$H$78"));
+                InsertRequest.Parameters.AddWithValue("@mS_Connection", ValidDate("$H$79"));
+                InsertRequest.Parameters.AddWithValue("@jobStartDate", ValidDate("$H$80"));
+                InsertRequest.Parameters.AddWithValue("@jobCount", ValidDic("$H$81"));
+                InsertRequest.Parameters.AddWithValue("@hasCallorder", CheckBoxValue("H82:J82"));
+                InsertRequest.Parameters.AddWithValue("@hasFirewall", CheckBoxValue("H83:J83"));
+                InsertRequest.Parameters.AddWithValue("@mA_Version", ValidDic("$H$84"));
+                InsertRequest.Parameters.AddWithValue("@isFirstTime", CheckBoxValue("H85:J85"));
+                InsertRequest.Parameters.AddWithValue("@isProduction", CheckBoxValue("H86:J86"));
+                InsertRequest.Parameters.AddWithValue("@testDoneDate", ValidDate("$H$87"));
+                InsertRequest.Parameters.AddWithValue("@costFrom", CheckBoxValue("H88:J88"));
+                InsertRequest.Parameters.AddWithValue("@costFromSystemName", ValidDic("$H$89"));
+                InsertRequest.Parameters.AddWithValue("@costFromSubSystemName", ValidDic("$H$90"));
+                InsertRequest.Parameters.AddWithValue("@hasSundayJobs", CheckBoxValue("H91:J91"));
+                InsertRequest.Parameters.AddWithValue("@hasRelatedSystems", CheckBoxValue("H92:J92"));
+                InsertRequest.Parameters.AddWithValue("@relatedSystemID", ValidDic("$H$93"));
+                InsertRequest.Parameters.AddWithValue("@relatedSystemName", ValidDic("$H$94"));
+                InsertRequest.Parameters.AddWithValue("@relatedSystemSubName", ValidDic("$H$95"));
+                InsertRequest.Parameters.AddWithValue("@relatedSystemDatacenter", ValidDic("$H$96"));
+                InsertRequest.Parameters.AddWithValue("@mAtMSCommunicationPort", ValidDic("$H$97"));
+                InsertRequest.Parameters.AddWithValue("@mSVIP", ValidDic("$H$98"));
+                InsertRequest.Parameters.AddWithValue("@mSPRI", ValidDic("$H$8798"));
+                InsertRequest.Parameters.AddWithValue("@mSSEC", ValidDic("$H$99"));
 
                 try
                 {
@@ -550,16 +547,42 @@ namespace magentr
         {
             //Example, Range("H32:K33") => Regex = @"\$[H-K]\$(32|33)"
             //Generate dictRange Regular Expression
+            Regex rxValidateRange = new Regex(@"[A-Z]+\d+\:[A-Z]+\d+");
+            if (!rxValidateRange.Match(dictRange).Success)
+                throw new Exception("String do not Match format " + rxValidateRange.ToString());
+            // Parse Range("H32:K33") into regex.
+            string[] dictRangeSplit = dictRange.Split(':');
+            string firstCol = dictRangeSplit[0].Substring(0, 1); //Doesn't work with AA and up.
+            int firstRow = Convert.ToInt32(dictRangeSplit[0].Remove(0, 1));
+            string secondCol = dictRangeSplit[1].Substring(0, 1); //Doesn't work with AA and up.
+            int secondRow = Convert.ToInt32(dictRangeSplit[1].Remove(0, 1));
+            
+            //Need to generate {3}, H31:K37 = "31|32|33|34|35|36|37"
+            string AllRows = "";
+            for (int i = firstRow; i <= secondRow; i++)
+            {
+                AllRows += i.ToString() + '|';
 
+            }//"31|32|33|34|35|36|37|"
+            //Debug.Print(AllRows);
+            AllRows = AllRows.Remove(AllRows.Length - 1, 1); //"31|32|33|34|35|36|37"
+            //Debug.Print(AllRows);
+            string rxRange = string.Format(@"\$[{0}-{1}]\$({2})"
+                , firstCol
+                , secondCol
+                , AllRows);
+
+            //Debug.Print(rxRange);
+            Regex rxRangeMatch = new Regex(rxRange);
             string result = null;
             try
             {
                 var EnumResult = from KeyValuePair<string, string> Checked in dictCheckBox
-                                 from KeyValuePair<string, string> Target in dictRange
-                                 where Checked.Key == Target.Key
+                                 where rxRangeMatch.IsMatch(Checked.Key)
                                  select Checked;
-                if (EnumResult.Count() != 1) throw new Exception("Checked Box is More than 1 or not checked.");
-                result = (string)EnumResult.First().Value;
+                //if (EnumResult.Count() != 1)
+                //    throw new Exception("Checked Box is More than 1 or not checked.");
+                result = (string)EnumResult.Single().Value;
 
             }
             catch
