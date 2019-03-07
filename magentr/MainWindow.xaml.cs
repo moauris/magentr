@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Net;
 using System.Data.OleDb;
 using System.Text.RegularExpressions;
+using System.Data;
 
 namespace magentr
 {
@@ -28,6 +29,8 @@ namespace magentr
             = new Dictionary<string, string>();
 
         public string RequestBango = "";
+
+        private string connString = "";
 
         public MainWindow()
         {
@@ -53,6 +56,7 @@ namespace magentr
             catch (Exception ex)
             {
                 lbxDebug.Items.Add("[Warning...] Invalid File Name or File Not selected. Existing.");
+                lbxDebug.Items.Add(ex.Message);
                 return;
             }
             RequestBango = RequestFileInfo.Name;
@@ -60,6 +64,17 @@ namespace magentr
             #endregion Open File Dialog
             if (dirNewRequest != "")
             {
+                //Start Procedure when fetched file is not null.
+                OleDbConnectionStringBuilder connSB = new OleDbConnectionStringBuilder();
+                connSB.Provider = "Microsoft.ACE.OLEDB.12.0";
+                connSB.DataSource = @"C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
+                connString = connSB.ToString();
+                lbxDebug.Items.Add("Target Dir is not Empty, judging if this file is already synced.");
+                if (await CheckFileExist(RequestFileInfo.Name))
+                {
+                    lbxDebug.Items.Add("File Already Synced");
+                    return;
+                }
                 await FetchNewRequest(dirNewRequest);
             }
             else
@@ -70,6 +85,31 @@ namespace magentr
                 (DateTime.Now - timeStart).ToString("hh':'mm':'ss"))));
         }
 
+        private async Task<bool> CheckFileExist(string FileName)
+        {
+            bool isExist = false;
+            await Task.Run(() =>
+            {
+                using (OleDbConnection conn = new OleDbConnection(connString))
+                {
+                    conn.Open();
+                    OleDbCommand SelectSQL = new OleDbCommand(
+                        @"SELECT tbRequestForm.* FROM tbRequestForm WHERE tbRequestForm.RequestFileName = @param1 ", conn);
+                    SelectSQL.Parameters.AddWithValue("@param1", FileName);
+                    OleDbDataReader reader = SelectSQL.ExecuteReader();
+                    Debug.Print("Execute Reader Content");
+                    while (reader.Read())
+                    {
+                        Debug.Print(reader[0].ToString());
+                    }
+                    isExist = reader.HasRows;
+                    Debug.Print("Does the row exist? {0}", isExist);
+                    Debug.Print("Closing Reader Object"); reader.Close();
+                    
+                }
+            });
+            return isExist;
+        }
 
 
         private async Task FetchNewRequest(string dirNew)
@@ -220,10 +260,6 @@ namespace magentr
                 , "dictCheckBox"
                 , dictCheckBox.Count));
             #endregion --------Test two Dictionary Objects---------
-            OleDbConnectionStringBuilder connSB = new OleDbConnectionStringBuilder();
-            connSB.Provider = "Microsoft.ACE.OLEDB.12.0";
-            connSB.DataSource = @"C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
-            string connString = connSB.ToString();
             #region Connect to Database with Connection String
 
             using (OleDbConnection conn = new OleDbConnection(connString))
@@ -388,23 +424,27 @@ namespace magentr
                 conn.Open();
                 var InsertRequest = new OleDbCommand(
 @"INSERT INTO tbServers (
- Hostname,  IPAddress,  Maker,  Model,  CPUCount,  CPUMicoprocessor,  OS,  Version,  Bit,  ClusterBox,  ClusterIndex
+ Hostname,  IPAddress,  Maker,  Model,  CPUCount,  CPUMicoprocessor,  OS,  Version,  BitVal,  ClusterBox,  ClusterIndex
 ) VALUES (
-@hostname, @iPAddress, @maker, @model, @cPUCount, @cPUMicoprocessor, @oS, @version, @bit, @clusterBox, @clusterIndex
+@hostname, @iPAddress, @maker, @model, @cPUCount, @cPUMicoprocessor, @oS, @version, @bitVal, @clusterBox, @clusterIndex
 );", conn);
-                InsertRequest.Parameters.AddWithValue("@hostname", HostName);/*
-                InsertRequest.Parameters.AddWithValue("@iPAddress", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@maker", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@model", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@cPUCount", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@oS", CheckBoxValue(ColumnStart + StartRow + ":" + ColumnFinish + (StartRow = 2 + StartRow)));
-                InsertRequest.Parameters.AddWithValue("@version", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@bit", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@clusterBox", ValidDic("$" + ColumnStart + ":$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@clusterIndex", ValidDic("$" + ColumnStart + ":$" + ++StartRow));*/
-
-                Debug.Print(InsertRequest.ToString());
+                InsertRequest.Parameters.AddWithValue("@hostname", HostName);
+                InsertRequest.Parameters.AddWithValue("@iPAddress", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@maker", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@model", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@cPUCount", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@oS", CheckBoxValue(ColumnStart + StartRow + ":" + ColumnFinish + (StartRow = 3 + StartRow)));
+                InsertRequest.Parameters.AddWithValue("@version", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@bitVal", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@clusterBox", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                InsertRequest.Parameters.AddWithValue("@clusterIndex", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                
+                for(int i = 0; i < InsertRequest.Parameters.Count; i++)
+                {
+                    Debug.Print("{0, -10} : {1}", InsertRequest.Parameters[i].ToString(), InsertRequest.Parameters[i].Value);
+                }
+                Debug.Print(InsertRequest.CommandText.ToString());
                 try
                 {
                     int RowsAffected = InsertRequest.ExecuteNonQuery();
@@ -436,7 +476,7 @@ namespace magentr
                 conn.Open();
                 var InsertRequest = new OleDbCommand(
 @"INSERT INTO tbAgents (
-rlnFileName,  rlnBango,  ApplyType,  ChangePoint,  SIer,  ServerPIC,  SystemID,  SystemName
+ rlnFileName,  rlnBango,  ApplyType,  ChangePoint,  SIer,  ServerPIC,  SystemID,  SystemName
 ,  SystemSubName,  NetworkLocation,  NetworkArea,  ServerVIP,  ServerPRI,  ServerSEC
 ,  MStMACommunicationPort,  MA_InstallDate,  MS_Connection,  JobStartDate,  JobCount
 ,  HasCallorder,  HasFirewall,  MA_Version,  IsFirstTime,  IsProduction,  TestDoneDate

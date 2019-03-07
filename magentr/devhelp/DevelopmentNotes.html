@@ -167,9 +167,18 @@
             Let's try the using statement to reinitialize the connection object.
             Resolved: Looks like one connection object must be disposed before you can re-use it.
             </p>
-            <p>DateTime Object returns with Type Mismatch error: Becareful with DateTime.Now, because if the database only takes
+            <p>DateTime Object returns with Type Mismatch error: Be careful with DateTime.Now, because if the database only takes
             YYYY-MM-DD format, DateTime.Now represents a time type varaible in Database.
             If we use DateTime.Today, it will return a date variable, and can be accepted.</p>
+            <h3>How to resolve the Error "INSERT INTO Syntax Error"</h3>
+            <p>Basically this time it was caused by the table column "bit", looks like it was reserved or something.
+            How to resolve this type of error "SQL Syntax Error" Is to make a OLEDbCommand.ToString(), and then try to 
+            use it in the Access Database. If there are any Syntax errors there will be reminders at least on "which".</p>
+            <p>Next on the development list is to create a procedure that checks if the file had been synced already.
+            This check should be done even before the entire worksheet gets called, since calling the worksheet and loading
+            it seems to take up much of the process time of the run.</p>
+            <p>Query the database tbRequests to find if files with the same request has already existed. If so, exist returning
+            message "file found already exist in Database, request ID: xx." </p>
         </div>
     </body>
 </html>
