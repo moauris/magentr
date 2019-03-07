@@ -167,18 +167,217 @@
             Let's try the using statement to reinitialize the connection object.
             Resolved: Looks like one connection object must be disposed before you can re-use it.
             </p>
-            <p>DateTime Object returns with Type Mismatch error: Be careful with DateTime.Now, because if the database only takes
-            YYYY-MM-DD format, DateTime.Now represents a time type varaible in Database.
-            If we use DateTime.Today, it will return a date variable, and can be accepted.</p>
+            <p>
+                DateTime Object returns with Type Mismatch error: Be careful with DateTime.Now, because if the database only takes
+                YYYY-MM-DD format, DateTime.Now represents a time type varaible in Database.
+                If we use DateTime.Today, it will return a date variable, and can be accepted.
+            </p>
             <h3>How to resolve the Error "INSERT INTO Syntax Error"</h3>
-            <p>Basically this time it was caused by the table column "bit", looks like it was reserved or something.
-            How to resolve this type of error "SQL Syntax Error" Is to make a OLEDbCommand.ToString(), and then try to 
-            use it in the Access Database. If there are any Syntax errors there will be reminders at least on "which".</p>
-            <p>Next on the development list is to create a procedure that checks if the file had been synced already.
-            This check should be done even before the entire worksheet gets called, since calling the worksheet and loading
-            it seems to take up much of the process time of the run.</p>
-            <p>Query the database tbRequests to find if files with the same request has already existed. If so, exist returning
-            message "file found already exist in Database, request ID: xx." </p>
+            <p>
+                Basically this time it was caused by the table column "bit", looks like it was reserved or something.
+                How to resolve this type of error "SQL Syntax Error" Is to make a OLEDbCommand.ToString(), and then try to 
+                use it in the Access Database. If there are any Syntax errors there will be reminders at least on "which".
+            </p>
+            <p>
+                Next on the development list is to create a procedure that checks if the file had been synced already.
+                This check should be done even before the entire worksheet gets called, since calling the worksheet and loading
+                it seems to take up much of the process time of the run.
+            </p>
+            <h3>Some Other Minor Functionalities</h3>
+            <p>
+                <strong>[Done]</strong> Query the database tbRequests to find if files with the same request has already existed. If so, exist returning
+                message "file found already exist in Database, request ID: xx." 
+            </p>
+            <p>
+                <strong>[Done]</strong> Next is to get all debug information into a formated text in the debug output page.
+            </p>
+            <p>
+                There needs to be some sort of mechanism to sync and make sure each tbServer row gets a unique entry. This part is easy to do,
+                what is difficult is what to do with it next.
+
+            </p>
+            <p>
+                The Current Running M/Agent Database.
+                Now, this is interesting because I already have a tbAgent table that has all the Agent information Available.
+                In ECS running environment, however, there is a list of another kind of M/Agent information, that is currently available M/Agents.
+                <br />
+                Like I have imagined to make, there must be an M/Agent Desired State Table, but here I think it can be made into the 
+                tbECSMAgent.
+                <br />
+                However, with tbECSMAgent, there needs to be a log sort of thing to keep track of M/Agent Changes.
+            </p>
+            <h3>Reverse Sync Order &amp; Unite ProgressBar</h3>
+            <p>
+                Currently, the sync to database is a cascade down type of method, Request => Columns => Servers.
+                However, I think it would be better to do it the other way, which is: <strong>Servers => Columns => Request</strong>
+
+            </p>
+            <p>
+                The progress bar had better be one single run for one single request.<br />
+                Currently there are about 3 or 4 instances where it is broken and reset.
+                Line 157: Set to 100, for Opening WorkBook File.
+                Line 196: Set to Total Filled Range, for finding all Range Objects to CRL Dictionary(144&plusmn;30 Objects)
+                Line 210: Set to Total Checked Boxes, about 10
+
+            </p>
+            <h3>The Efficiency Business</h3>
+            <p>
+                Currently the process runs for 30 second per cycle, which is where I left it basically.
+                <table >
+                    <tr>
+                        <td>
+                            [2019-03-07 18:30:09] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Counting Checked Box Total Number<br />
+                            'magentr.exe' (CLR v4.0.30319: magentr.exe): Loaded 'System.Dynamic.DynamicAssembly'.
+                            [2019-03-07 18:30:23] &lt;~.FetchNewRequest(string dirNew){ }&gt;<br />
+                            % INSERT INTO tbRequestForm<br />
+                            (RequestBango, RequestFileName<br />
+                            , DateApplied, Applier<br />
+                            , Email, Phone, Approver, Comment)<br />
+                            Values (@requestBango, @requestFileName<br />
+                            , @dateApplied, @applier<br />
+                            , @email ,@phone, @approver<br />
+                            , @comment);<br />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                Try to find out what happened inbetween these codes that could possibly take up 14 seconds to process.
+                <br />
+                <strong>Good News!</strong> Find an answer on StackOverFlow "Extremely Slow Linq to Excel"
+                : using LINQ directly on Excel Interface
+                goes through the entire Unmanaged Excel Objects evert time (as demonstrated by removing one accidentally
+                added IEnumerable.Count() method had cut the time almost by 8 seconds from 30 to 22). The correct way to do this
+                is to make it a list before it is queried. Let's test it out.
+            </p>
+            <p>
+                Current Performance: 19/22 seconds.<br />
+                After improvement: 24/28 seconds.<br />
+                huh....This is really interesting... So, After improvement it actually take more time to process.
+                <table>
+                    <tr>
+                        <td>
+                            Loading Excel File
+                        </td>
+                        <td>
+                            6.9s
+                        </td>
+                        <td>
+                            [2019-03-07 19:41:30 | 0.003] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Loading Excel File into Memory...<br />
+                            [2019-03-07 19:41:37 | 6.9103] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Loading Completed.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Making IEnumerable for filled Ranges
+                        </td>
+                        <td>
+                            9.5s
+                        </td>
+                        <td>
+                            [2019-03-07 19:41:37 | 0.0052] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Making IEnumerable for Filled Ranges<br />
+                            [2019-03-07 19:41:46 | 9.5749] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Calculating Total Form Area Ranges
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Making IEnumerable for filled Ranges
+                        </td>
+                        <td>
+                            5.4s
+                        </td>
+                        <td>
+                            [2019-03-07 19:41:47 | 0.004] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Making IEnumerable for All Checked Boxes<br />
+                            [2019-03-07 19:41:52 | 5.4232] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Counting Checked Box Total Number
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Total:
+                        </td>
+                        <td>
+                            21.8s
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </p>
+            <p>
+                So it actaully helps with this by about 5 seconds.
+                <table>
+                    <tr>
+                        <td>
+                            Loading Excel File
+                        </td>
+                        <td>
+                            6.9s
+                        </td>
+                        <td>
+                            6.5s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Making IEnumerable for filled Ranges
+                        </td>
+                        <td>
+                            9.5s
+                        </td>
+                        <td>
+                            [2019-03-07 19:41:37 | 0.0052] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Making IEnumerable for Filled Ranges<br />
+                            [2019-03-07 19:41:46 | 9.5749] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Calculating Total Form Area Ranges
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Making IEnumerable for filled Ranges
+                        </td>
+                        <td>
+                            5.4s
+                        </td>
+                        <td>
+                            [2019-03-07 19:41:47 | 0.004] &lt;~.FetchNewRequest(string dirNew){ }&gt;
+                            % Making IEnumerable for All Checked Boxes<br />
+                            [2019-03-07 19:41:52 | 5.4232] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Counting Checked Box Total Number
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Total:
+                        </td>
+                        <td>
+                            21.8s
+                        </td>
+                        <td></td>
+                    </tr>
+
+                </table>
+
+            </p>
+            <p>
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+            </p>
         </div>
     </body>
 </html>

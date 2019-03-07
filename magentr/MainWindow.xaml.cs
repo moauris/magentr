@@ -31,6 +31,21 @@ namespace magentr
         public string RequestBango = "";
 
         private string connString = "";
+        private DateTime lasttime = DateTime.Now;
+        private void printDebug(string ThisName, string message)
+        {
+            //example: [2019-01-01 22:33:55] <~.OnNewRequestClick> % Some Message about Debug Info.
+            
+            string messageformat = "[{0} | {3}] <~.{1}> % {2}";
+            string TimeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            //var st = new StackTrace();
+            double dur = (DateTime.Now - lasttime).TotalSeconds;
+            string OutputMessage = string.Format(messageformat
+                , TimeStamp, ThisName, message, Math.Round(dur, 4));
+            Debug.Print(OutputMessage);
+            lasttime = DateTime.Now;
+
+        }
 
         public MainWindow()
         {
@@ -39,6 +54,7 @@ namespace magentr
 
         private async void OnNewRequestClick(object sender, RoutedEventArgs e)
         {
+            string st = "OnNewRequestClick(object sender, RoutedEventArgs e){}";
             //Initiate Load New Request Form Procedure
             #region Open File Dialog
             DateTime timeStart = DateTime.Now;
@@ -46,7 +62,7 @@ namespace magentr
             OpenFileNew.DefaultExt = ".xlsx;.xls";
             OpenFileNew.Filter = "Excel Worksheet (.xls;.xlsx)|*.xls;*.xlsx";
             OpenFileNew.ShowDialog();
-            lbxDebug.Items.Add(OpenFileNew.FileName + " Selected.");
+            printDebug(st, OpenFileNew.FileName + " Selected.");
             dirNewRequest = OpenFileNew.FileName;
             FileInfo RequestFileInfo = null;
             try
@@ -55,8 +71,8 @@ namespace magentr
             }
             catch (Exception ex)
             {
-                lbxDebug.Items.Add("[Warning...] Invalid File Name or File Not selected. Existing.");
-                lbxDebug.Items.Add(ex.Message);
+                printDebug(st, "[Warning...] Invalid File Name or File Not selected. Existing.");
+                printDebug(st, ex.Message);
                 return;
             }
             RequestBango = RequestFileInfo.Name;
@@ -69,24 +85,25 @@ namespace magentr
                 connSB.Provider = "Microsoft.ACE.OLEDB.12.0";
                 connSB.DataSource = @"C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
                 connString = connSB.ToString();
-                lbxDebug.Items.Add("Target Dir is not Empty, judging if this file is already synced.");
+                printDebug(st, "Target Dir is not Empty, judging if this file is already synced.");
                 if (await CheckFileExist(RequestFileInfo.Name))
                 {
-                    lbxDebug.Items.Add("File Already Synced");
+                    printDebug(st, "File Already Synced");
                     return;
                 }
                 await FetchNewRequest(dirNewRequest);
             }
             else
             {
-                lbxDebug.Items.Add("No file selected.");
+                printDebug(st, "No file selected.");
             }
-            lbxDebug.Items.Add((string.Format("Button Click Ran for: {0}", 
-                (DateTime.Now - timeStart).ToString("hh':'mm':'ss"))));
+            printDebug(st, string.Format("Button Click Ran for: {0}", 
+                (DateTime.Now - timeStart).ToString("hh':'mm':'ss")));
         }
 
         private async Task<bool> CheckFileExist(string FileName)
         {
+            string st = "CheckFileExist(string FileName){ }";
             bool isExist = false;
             await Task.Run(() =>
             {
@@ -97,14 +114,14 @@ namespace magentr
                         @"SELECT tbRequestForm.* FROM tbRequestForm WHERE tbRequestForm.RequestFileName = @param1 ", conn);
                     SelectSQL.Parameters.AddWithValue("@param1", FileName);
                     OleDbDataReader reader = SelectSQL.ExecuteReader();
-                    Debug.Print("Execute Reader Content");
+                    printDebug(st, "Execute Reader Content");
                     while (reader.Read())
                     {
-                        Debug.Print(reader[0].ToString());
+                        Debug.Print("Record find: ID={0}.", reader[0].ToString());
                     }
                     isExist = reader.HasRows;
-                    Debug.Print("Does the row exist? {0}", isExist);
-                    Debug.Print("Closing Reader Object"); reader.Close();
+                    printDebug(st, string.Format("Does the row exist? {0}", isExist));
+                    printDebug(st, "Closing Reader Object"); reader.Close();
                     
                 }
             });
@@ -114,17 +131,18 @@ namespace magentr
 
         private async Task FetchNewRequest(string dirNew)
         {
+            string st = "FetchNewRequest(string dirNew){ }";
             DateTime timeStart = DateTime.Now;
-
             var UpdateProgressBar = new Progress<int>(value => pbarMain.Value = value);
             var SetProgressBarMax = new Progress<int>(value => pbarMain.Maximum = value);
             var PrintDebugListBox = new Progress<string>(value => 
             {
-                lbxDebug.Items.Add(DateTime.Now.ToString("hh':'mm':'ss") + " % " + value);
+                printDebug(st, value);
                 svDebug.ScrollToBottom();
             });
             //This procedure fetches information from Excel
             FileInfo InputFile = new FileInfo(dirNew);
+            printDebug(st, "Start Task: SyncVonExcel(...){ }");
             await Task.Run(() => SyncVonExcel(InputFile
                     , UpdateProgressBar
                     , SetProgressBarMax
@@ -168,10 +186,11 @@ namespace magentr
             //Cell Range: D5, S163
             printDebugListBox.Report("Assigning Worksheet Object to Target Range = D5:S163");
             EXCEL.Range FormArea = xlSht.Range["D5", "S163"]; //This is too many, Get only non null ones.
-            IEnumerable<EXCEL.Range> ieFilledRange =
+            printDebugListBox.Report("Making IEnumerable for Filled Ranges");
+            var ieFilledRange = 
                 from EXCEL.Range r in FormArea
                 where r.Value != null
-                select r;
+                select r;//.ToList();
             printDebugListBox.Report("Calculating Total Form Area Ranges");
             int FormAreaRangCount = FormArea.Count;
             int WorkLoad_Total = ieFilledRange.Count();
@@ -191,30 +210,24 @@ namespace magentr
             //Trying to fetch form public Dictionary Object.
             printDebugListBox.Report("Assigning Worksheet Shapes to Target shapes.");
             EXCEL.Shapes xlShapes = xlSht.Shapes;
-
-            WorkLoad_Total = xlShapes.Count;
-            setProgressBarMax.Report(WorkLoad_Total);
-            WorkdLoad_Current = 0;
-
             //Regex mCheckBox = new Regex(@"(チェック|Check Box)");
-
-            IEnumerable<EXCEL.Shape> xlCheckBoxes =
+            printDebugListBox.Report("Making IEnumerable for All Checked Boxes");
+            var xlCheckBoxes = 
                 from EXCEL.Shape s in xlShapes
                 where (s.Name.Contains("チェック") || s.Name.Contains("Check Box")) //v0.0.0.1 Need a regex to match both en and jp version.
                 && (double)s.OLEFormat.Object.Value == 1 //Select only selected Value
-                select s;
+                select s;//.ToList();
+            printDebugListBox.Report("Counting Checked Box Total Number");
 
             WorkLoad_Total = xlCheckBoxes.Count();
-            printDebugListBox.Report(string.Format(
-                "Total Worksheet Shapes Valid/Total: {0}/{1}"
-                , WorkLoad_Total, FormAreaRangCount));
+            printDebugListBox.Report("Counting Checked Box Total Number Completed");
+            reportProgressBar.Report(0);
 
             //Dictionary<string, string> dicCheckedBoxes = 
             //    new Dictionary<string, string>(); //combine with the dictRequestRawData object
-
             setProgressBarMax.Report(WorkLoad_Total);
-
-            foreach(EXCEL.Shape s in xlCheckBoxes)
+            printDebugListBox.Report("Assigning Dictionary Object with Checkbox.");
+            foreach (EXCEL.Shape s in xlCheckBoxes)
             {
                 dictCheckBox.Add(
                     s.TopLeftCell.Address
@@ -222,7 +235,8 @@ namespace magentr
                     .Offset[0, 1].Value);
                 reportProgressBar.Report(++WorkdLoad_Current);
             }
-            
+            printDebugListBox.Report("Assigning Dictionary Object with Checkbox Completed. Close Workbook Application.");
+
             #endregion ---- Fetch M/Agent Information ----
             xlWbk.Close(false, Missing.Value, Missing.Value); //Arguments in this will cause excel to exist without saving.
             xlWorkbooks.Close();
@@ -231,6 +245,7 @@ namespace magentr
             Marshal.ReleaseComObject(xlWorkbooks);
             Marshal.ReleaseComObject(xlWbk);
             Marshal.ReleaseComObject(xlSht);
+            printDebugListBox.Report("Closed Workbook Application.");
             //Marshal.ReleaseComObject(xlRange);
             #region --------Test two Dictionary Objects (Not Used)---------
             /* Below Are Listing of all contents of the two objects.
@@ -250,15 +265,6 @@ namespace magentr
             }
             */
             //Generating Object Count Report.
-            string ReportDictionaryCount = "For {0}, there are {1} elements.";
-            printDebugListBox.Report(
-                string.Format(ReportDictionaryCount
-                , "dictRequestRawData"
-                , dictRequestRawData.Count));
-            printDebugListBox.Report(
-                string.Format(ReportDictionaryCount
-                , "dictCheckBox"
-                , dictCheckBox.Count));
             #endregion --------Test two Dictionary Objects---------
             #region Connect to Database with Connection String
 
