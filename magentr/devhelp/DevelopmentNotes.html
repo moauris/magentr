@@ -223,7 +223,7 @@
             <h3>The Efficiency Business</h3>
             <p>
                 Currently the process runs for 30 second per cycle, which is where I left it basically.
-                <table >
+                <table>
                     <tr>
                         <td>
                             [2019-03-07 18:30:09] &lt;~.FetchNewRequest(string dirNew){ }&gt;
@@ -309,8 +309,19 @@
 
             </p>
             <p>
-                So it actaully helps with this by about 5 seconds.
+                So it actaully helps with this by about 3 seconds.
                 <table>
+                    <tr>
+                        <td>
+                            CLR Event
+                        </td>
+                        <td>
+                            ToList Method
+                        </td>
+                        <td>
+                            IEnumerable Method
+                        </td>
+                    </tr>
                     <tr>
                         <td>
                             Loading Excel File
@@ -324,42 +335,121 @@
                     </tr>
                     <tr>
                         <td>
-                            Making IEnumerable for filled Ranges
+                            Creating IEnumerable Object (Range)
                         </td>
                         <td>
-                            9.5s
+                            9.57s
+                        </td>
+                        <td>0.001s</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            IEnumerable.Count
                         </td>
                         <td>
-                            [2019-03-07 19:41:37 | 0.0052] &lt;~.FetchNewRequest(string dirNew){ }&gt;
-                            % Making IEnumerable for Filled Ranges<br />
-                            [2019-03-07 19:41:46 | 9.5749] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Calculating Total Form Area Ranges
+                            0s
+                        </td>
+                        <td>
+                            6.286s
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            Making IEnumerable for filled Ranges
+                            IEnumerable => Dictionary
+                        </td>
+                        <td>
+                            0.6s
+                        </td>
+                        <td>
+                            7.9s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Creating IEnumerable Object (Shapes)
                         </td>
                         <td>
                             5.4s
                         </td>
                         <td>
-                            [2019-03-07 19:41:47 | 0.004] &lt;~.FetchNewRequest(string dirNew){ }&gt;
-                            % Making IEnumerable for All Checked Boxes<br />
-                            [2019-03-07 19:41:52 | 5.4232] &lt;~.FetchNewRequest(string dirNew){ }&gt; % Counting Checked Box Total Number
+                            0s
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            Total:
+                            IEnumerable.Count
                         </td>
                         <td>
-                            21.8s
+                            0s
                         </td>
-                        <td></td>
+                        <td>
+                            2.76s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            IEnumerable => Dictionary
+                        </td>
+                        <td>
+                            1.1s
+                        </td>
+                        <td>
+                            3.0s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Total
+                        </td>
+                        <td>
+                            23.57s
+                        </td>
+                        <td>
+                            26.47s
+                        </td>
                     </tr>
 
                 </table>
 
+            </p>
+            <p>
+                Summary: Tolist actually takes all the time trying to make
+                Excel Objects out of the CRL, inside the Excel.Application Object
+                into the CRL, and therefore making it more friendly to query.
+                The tradeoff is that the ToList itself takes a long time to initialize.
+                After that, it is going to be rather quick. <br />
+                On the other hand, The IEnumerable used directly almost takes no time to
+                initialize, but as a trade off, every time the IEnumerable is called (foreach, count, etc.)
+                it iterate through the entire unmanaged memory to fetch the few data, and it can be 
+                exponentially time consuming.<br />
+                I guess as far as efficiency is concerned, for my application in particular, it nearly makes no difference.
+                The original question the questioner was trying to query 2000+ lines of records and it takes minutes.
+            </p>
+            <p>
+                This gives me the ability to make an all query.
+                <table>
+                    <tr>
+                        <td>Stages</td>
+                        <td>Step Increase</td>
+                        <td>End Marker</td>
+                    </tr>
+                    <tr>
+                        <td>Read Excel WorkBook</td>
+                        <td>InDetermined (6+)</td>
+                        <td>Workbook Loaded</td>
+                    </tr>
+                    <tr>
+                        <td>Loading two IEnumerables</td>
+                        <td>InDetermined (10+)</td>
+                        <td>Two Objects Loaded</td>
+                    </tr>
+                    <tr>
+                        <td>Load Steps and process</td>
+                        <td>144+10</td>
+                        <td>All Processed.</td>
+                    </tr>
+                </table>
+                
             </p>
             <p>
                 <br />

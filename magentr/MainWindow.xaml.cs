@@ -133,7 +133,19 @@ namespace magentr
         {
             string st = "FetchNewRequest(string dirNew){ }";
             DateTime timeStart = DateTime.Now;
-            var UpdateProgressBar = new Progress<int>(value => pbarMain.Value = value);
+            var UpdateProgressBar = new Progress<int>(value => {
+                if (value >= 0)
+                {
+                    pbarMain.IsIndeterminate = false;
+                    pbarMain.Value = value;
+                }
+                else
+                {
+                    pbarMain.IsIndeterminate = true;
+                }
+                
+
+            });
             var SetProgressBarMax = new Progress<int>(value => pbarMain.Maximum = value);
             var PrintDebugListBox = new Progress<string>(value => 
             {
@@ -166,16 +178,16 @@ namespace magentr
                 return;
             }
             printDebugListBox.Report("Loading Excel File into Memory...");
-            EXCEL.Application xlApp = new EXCEL.Application();              reportProgressBar.Report(20);
-            EXCEL.Workbooks xlWorkbooks = xlApp.Workbooks;                  reportProgressBar.Report(40);
-            EXCEL.Workbook xlWbk = xlWorkbooks.Open(inputfile.FullName);    reportProgressBar.Report(60);
-            EXCEL.Worksheet xlSht = xlWbk.ActiveSheet;                      reportProgressBar.Report(80);
-            reportProgressBar.Report(100);
+            reportProgressBar.Report(-1);
+            EXCEL.Application xlApp = new EXCEL.Application();              
+            EXCEL.Workbooks xlWorkbooks = xlApp.Workbooks;                  
+            EXCEL.Workbook xlWbk = xlWorkbooks.Open(inputfile.FullName);    
+            EXCEL.Worksheet xlSht = xlWbk.ActiveSheet;                      
+            
             printDebugListBox.Report("Loading Completed.");
-            reportProgressBar.Report(0);
             #region ---- Fetch M/Agent Information ----
             printDebugListBox.Report("Beginning Fetching M/Agent Information.");
-            printDebugListBox.Report("Getting Range Dictionary Delegate.");
+            printDebugListBox.Report("Setting Range Dictionary Delegate.");
 
             void RangeToDict(EXCEL.Range TargetRange)
             {
@@ -185,19 +197,24 @@ namespace magentr
 
             //Cell Range: D5, S163
             printDebugListBox.Report("Assigning Worksheet Object to Target Range = D5:S163");
-            EXCEL.Range FormArea = xlSht.Range["D5", "S163"]; //This is too many, Get only non null ones.
+            //EXCEL.Range FormArea = xlSht.Range["D5", "S163"]; //This is too many, Get only non null ones.
             printDebugListBox.Report("Making IEnumerable for Filled Ranges");
             var ieFilledRange = 
-                from EXCEL.Range r in FormArea
-                where r.Value != null
-                select r;//.ToList();
+                (from EXCEL.Range r in xlSht.Range["D5", "S163"]
+                 where r.Value != null
+                select r).ToList();
+            printDebugListBox.Report("Making IEnumerable for All Checked Boxes");
+            printDebugListBox.Report("Assigning Worksheet Shapes to Target shapes.");
+            //EXCEL.Shapes xlShapes = xlSht.Shapes;
+            var xlCheckBoxes = (
+                from EXCEL.Shape s in xlSht.Shapes
+                where (s.Name.Contains("チェック") || s.Name.Contains("Check Box")) //v0.0.0.1 Need a regex to match both en and jp version.
+                && (double)s.OLEFormat.Object.Value == 1 //Select only selected Value
+                select s).ToList();//.ToList();
+
             printDebugListBox.Report("Calculating Total Form Area Ranges");
-            int FormAreaRangCount = FormArea.Count;
-            int WorkLoad_Total = ieFilledRange.Count();
+            int WorkLoad_Total = ieFilledRange.Count() + xlCheckBoxes.Count();
             int WorkdLoad_Current = 0;
-            printDebugListBox.Report(string.Format(
-                "Total Form Area Ranges Valid/Total: {0}/{1}"
-                , WorkLoad_Total, FormAreaRangCount));
             setProgressBarMax.Report(WorkLoad_Total);
             reportProgressBar.Report(WorkdLoad_Current);
             printDebugListBox.Report("Assigning Range Objects to Local Dictionary Object");
@@ -206,26 +223,6 @@ namespace magentr
                 RangeToDict(r);
                 reportProgressBar.Report(++WorkdLoad_Current);
             }
-            printDebugListBox.Report("Sync Target Range Area Sync to Dictionary Complete.");
-            //Trying to fetch form public Dictionary Object.
-            printDebugListBox.Report("Assigning Worksheet Shapes to Target shapes.");
-            EXCEL.Shapes xlShapes = xlSht.Shapes;
-            //Regex mCheckBox = new Regex(@"(チェック|Check Box)");
-            printDebugListBox.Report("Making IEnumerable for All Checked Boxes");
-            var xlCheckBoxes = 
-                from EXCEL.Shape s in xlShapes
-                where (s.Name.Contains("チェック") || s.Name.Contains("Check Box")) //v0.0.0.1 Need a regex to match both en and jp version.
-                && (double)s.OLEFormat.Object.Value == 1 //Select only selected Value
-                select s;//.ToList();
-            printDebugListBox.Report("Counting Checked Box Total Number");
-
-            WorkLoad_Total = xlCheckBoxes.Count();
-            printDebugListBox.Report("Counting Checked Box Total Number Completed");
-            reportProgressBar.Report(0);
-
-            //Dictionary<string, string> dicCheckedBoxes = 
-            //    new Dictionary<string, string>(); //combine with the dictRequestRawData object
-            setProgressBarMax.Report(WorkLoad_Total);
             printDebugListBox.Report("Assigning Dictionary Object with Checkbox.");
             foreach (EXCEL.Shape s in xlCheckBoxes)
             {
