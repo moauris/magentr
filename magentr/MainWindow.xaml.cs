@@ -305,14 +305,17 @@ namespace magentr
             }
 
             printDebugListBox.Report(SyncColumn(connString, "H", "J"));
+            printDebugListBox.Report(SyncServer(connString, "H", "J", 49));
             printDebugListBox.Report(SyncServer(connString, "H", "J", 51));
             printDebugListBox.Report(SyncServer(connString, "H", "J", 64));
 
             printDebugListBox.Report(SyncColumn(connString, "L", "N"));
+            printDebugListBox.Report(SyncServer(connString, "L", "N", 49));
             printDebugListBox.Report(SyncServer(connString, "L", "N", 51));
             printDebugListBox.Report(SyncServer(connString, "L", "N", 64));
 
             printDebugListBox.Report(SyncColumn(connString, "P", "R"));
+            printDebugListBox.Report(SyncServer(connString, "P", "R", 49));
             printDebugListBox.Report(SyncServer(connString, "P", "R", 51));
             printDebugListBox.Report(SyncServer(connString, "P", "R", 64));
 
@@ -419,9 +422,24 @@ namespace magentr
             // PRI = 51 + 13
             // SEC = 64 + 13
             string HostName = ValidDic("$" + ColumnStart + "$" + StartRow);
-            if (HostName.Length < 8)
+            if (HostName.Length < 8) //Exit Directly if no invalid Hostname
                 return string.Format("Invalid Hostname \"{0}\" at ${1}${2} \r\n" +
                     "Sync Terminated.", HostName, ColumnStart, StartRow);
+            string BoxIndex = "";
+            switch (StartRow)
+            {
+                case 49:
+                    BoxIndex = "0";
+                    break;
+                case 51:
+                    BoxIndex = "1";
+                    break;
+                case 64:
+                    BoxIndex = "2";
+                    break;
+
+            }
+            string VIPHost = ValidDic("$" + ColumnStart + "$" + 49);
             using (OleDbConnection conn = new OleDbConnection(ConnectionString))
             {
                 conn.Open();
@@ -433,17 +451,33 @@ namespace magentr
 );", conn);
                 InsertRequest.Parameters.AddWithValue("@hostname", HostName);
                 InsertRequest.Parameters.AddWithValue("@iPAddress", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@maker", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@model", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@cPUCount", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@oS", CheckBoxValue(ColumnStart + StartRow + ":" + ColumnFinish + (StartRow = 3 + StartRow)));
-                InsertRequest.Parameters.AddWithValue("@version", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@bitVal", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@clusterBox", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                InsertRequest.Parameters.AddWithValue("@clusterIndex", ValidDic("$" + ColumnStart + "$" + ++StartRow));
-                
-                for(int i = 0; i < InsertRequest.Parameters.Count; i++)
+                if (StartRow == 50) //Sync to a VIP Entry Since start row has already been ++ (^), it is 49+1=50
+                {
+                    InsertRequest.Parameters.AddWithValue("@maker", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@model", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@cPUCount", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@oS", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@version", "VIP");
+                    InsertRequest.Parameters.AddWithValue("@bitVal", "VIP");
+                }
+                else
+                {
+                    
+                    InsertRequest.Parameters.AddWithValue("@maker", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                    InsertRequest.Parameters.AddWithValue("@model", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                    InsertRequest.Parameters.AddWithValue("@cPUCount", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                    InsertRequest.Parameters.AddWithValue("@cPUMicoprocessor", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                    InsertRequest.Parameters.AddWithValue("@oS", CheckBoxValue(ColumnStart + StartRow + ":" + ColumnFinish + (StartRow = 3 + StartRow)));
+                    InsertRequest.Parameters.AddWithValue("@version", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+                    InsertRequest.Parameters.AddWithValue("@bitVal", ValidDic("$" + ColumnStart + "$" + ++StartRow));
+
+                }
+
+                InsertRequest.Parameters.AddWithValue("@clusterBox", VIPHost);
+                InsertRequest.Parameters.AddWithValue("@clusterIndex", BoxIndex);
+
+                for (int i = 0; i < InsertRequest.Parameters.Count; i++)
                 {
                     Debug.Print("{0, -10} : {1}", InsertRequest.Parameters[i].ToString(), InsertRequest.Parameters[i].Value);
                 }
@@ -469,9 +503,12 @@ namespace magentr
             //if yes, direcly return Error Message without connecting to Database.
             //Rule No1: $32:^33 Cannot be "Not Selected"
             //Rule No2: $51 must be non-empty.
+            //Rule No3: $98 must be non-empty.
             //We first judge these values, in the sync we can directly use these string variables
             string RegisterType = CheckBoxValue(ColumnStart + "32:" + ColumnFinish + "33");
             string PhysicalHostPRI = ValidDic("$" + ColumnStart + "$51");
+            string ConnectedDC = "";
+
             if (RegisterType.Contains("選択") || PhysicalHostPRI.Length < 8)
                 return "[Warning...] Either Apply Type not Selected, or no primary host specified. Aborting Sync.";
             using (OleDbConnection conn = new OleDbConnection(ConnectionString))
@@ -485,7 +522,7 @@ namespace magentr
 ,  HasCallorder,  HasFirewall,  MA_Version,  IsFirstTime,  IsProduction,  TestDoneDate
 ,  CostFrom,  CostFromSystemName,  CostFromSubSystemName,  HasSundayJobs,  HasRelatedSystems
 ,  RelatedSystemID,  RelatedSystemName,  RelatedSystemSubName,  RelatedSystemDatacenter
-,  MAtMSCommunicationPort,  MSVIP,  MSPRI,  MSSEC 
+,  MAtMSCommunicationPort,  MSVIP,  MSPRI,  MSSEC,  AgentName
 ) VALUES (
 @rlnfileName, @rlnbango, @applyType, @changePoint, @sIer, @serverPIC, @systemID, @systemName
 , @systemSubName, @networkLocation, @networkArea, @serverVIP, @serverPRI, @serverSEC
@@ -493,7 +530,7 @@ namespace magentr
 , @hasCallorder, @hasFirewall, @mA_Version, @isFirstTime, @isProduction, @testDoneDate
 , @costFrom, @costFromSystemName, @costFromSubSystemName, @hasSundayJobs, @hasRelatedSystems
 , @relatedSystemID, @relatedSystemName, @relatedSystemSubName, @relatedSystemDatacenter
-, @mAtMSCommunicationPort, @mSVIP, @mSPRI, @mSSEC
+, @mAtMSCommunicationPort, @mSVIP, @mSPRI, @mSSEC, @agentName
 );", conn);
 
                 InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
@@ -534,6 +571,7 @@ namespace magentr
                 InsertRequest.Parameters.AddWithValue("@mSVIP", ValidDic("$" + ColumnStart + "$98"));
                 InsertRequest.Parameters.AddWithValue("@mSPRI", ValidDic("$" + ColumnStart + "$99"));
                 InsertRequest.Parameters.AddWithValue("@mSSEC", ValidDic("$" + ColumnStart + "$100"));
+                InsertRequest.Parameters.AddWithValue("@agentName", )
 
                 try
                 {
