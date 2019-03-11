@@ -465,6 +465,25 @@
                 Add a new column called "AgentName", it contains a piece of information like this: $Datacenter.$Agent<br />
                 uny40510.aur00101 => for example.
             </p>
+            <h3>Efficiency is now acceptable, proceeding to Sync Order</h3>
+            <p>
+                The issue now is with the sync order. Currently we are syncing the request by the order of Request File =>
+                Columns => Agents. The "using" statement didn't quite help with it, as syncing each table is now independant.
+                Going down this path would mean if a sync error had happened, I need to reverse (delete) previously synced 
+                lines from another table.
+            </p>
+            <p>
+                I'm imagining a structure similar to this: 
+                <ul>
+                    <li>
+                        One method that takes a filename as an argument, and checks and sync all tables.
+                        <ul>
+                            <li>Validationg: File Exist ? Proceed : Abort.</li>
+                            <li>Database: Filename not exist in Database ? Proceed : Abort.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </p>
             <p>
                 <br />
                 <br />

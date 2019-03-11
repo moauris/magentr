@@ -493,6 +493,7 @@ namespace magentr
                 }
             }
         }
+        
 
         private string SyncColumn
             ( string ConnectionString
@@ -505,12 +506,28 @@ namespace magentr
             //Rule No2: $51 must be non-empty.
             //Rule No3: $98 must be non-empty.
             //We first judge these values, in the sync we can directly use these string variables
-            string RegisterType = CheckBoxValue(ColumnStart + "32:" + ColumnFinish + "33");
-            string PhysicalHostPRI = ValidDic("$" + ColumnStart + "$51");
-            string ConnectedDC = "";
+            string ThisName = "SyncColumn";
+            Dictionary<string, string> tableDCMS = new Dictionary<string, string>();
+            tableDCMS.Add("jcs01800", "uny30110"); tableDCMS.Add("jcs01700", "uny40110");
+            tableDCMS.Add("jcs01600", "uny40310"); tableDCMS.Add("jcs01200", "uny40510");
+            tableDCMS.Add("jcs01100", "uny40710"); tableDCMS.Add("jcs01500", "uny40910");
+            tableDCMS.Add("jcs01300", "uny41110"); tableDCMS.Add("jcs01400", "uny41310");
 
-            if (RegisterType.Contains("選択") || PhysicalHostPRI.Length < 8)
+            string RegisterType = CheckBoxValue(ColumnStart + "32:" + ColumnFinish + "33");
+            string MS_VIP = ValidDic("$" + ColumnStart + "$98");
+
+            string AG_VIP = ValidDic("$" + ColumnStart + "$49");
+            string AG_PRI = ValidDic("$" + ColumnStart + "$51");
+            string AG_SEC = ValidDic("$" + ColumnStart + "$64");
+
+            if (RegisterType.Contains("選択") || AG_PRI.Length < 8)
                 return "[Warning...] Either Apply Type not Selected, or no primary host specified. Aborting Sync.";
+            if (MS_VIP.Length < 8)
+                return "[Warning...] No Datacenter assigned for this host. Abort Sync.";
+            string ConnectedDC = tableDCMS[MS_VIP];
+
+            string ConnectedAG = AG_VIP.Length < 8 ? AG_PRI : AG_VIP;
+
             using (OleDbConnection conn = new OleDbConnection(ConnectionString))
             {
                 conn.Open();
@@ -533,6 +550,7 @@ namespace magentr
 , @mAtMSCommunicationPort, @mSVIP, @mSPRI, @mSSEC, @agentName
 );", conn);
 
+
                 InsertRequest.Parameters.AddWithValue("@requestFileName", RequestBango);
                 InsertRequest.Parameters.AddWithValue("@requestBango", RequestBango.Substring(0, 15));
                 InsertRequest.Parameters.AddWithValue("@applyType", RegisterType);
@@ -544,9 +562,9 @@ namespace magentr
                 InsertRequest.Parameters.AddWithValue("@systemSubName", ValidDic("$" + ColumnStart + "$41"));
                 InsertRequest.Parameters.AddWithValue("@networkLocation", CheckBoxValue(ColumnStart + "42:" + ColumnFinish + "43"));
                 InsertRequest.Parameters.AddWithValue("@networkArea", CheckBoxValue(ColumnStart + "44:" + ColumnFinish + "47"));
-                InsertRequest.Parameters.AddWithValue("@serverVIP", ValidDic("$" + ColumnStart + "$49"));
-                InsertRequest.Parameters.AddWithValue("@serverPRI", PhysicalHostPRI);
-                InsertRequest.Parameters.AddWithValue("@serverSEC", ValidDic("$" + ColumnStart + "$64"));
+                InsertRequest.Parameters.AddWithValue("@serverVIP", AG_VIP);
+                InsertRequest.Parameters.AddWithValue("@serverPRI", AG_PRI);
+                InsertRequest.Parameters.AddWithValue("@serverSEC", AG_SEC);
                 InsertRequest.Parameters.AddWithValue("@mStMACommunicationPort", ValidDic("$" + ColumnStart + "$77"));
                 InsertRequest.Parameters.AddWithValue("@mA_InstallDate", ValidDate("$" + ColumnStart + "$78"));
                 InsertRequest.Parameters.AddWithValue("@mS_Connection", ValidDate("$" + ColumnStart + "$79"));
@@ -571,7 +589,7 @@ namespace magentr
                 InsertRequest.Parameters.AddWithValue("@mSVIP", ValidDic("$" + ColumnStart + "$98"));
                 InsertRequest.Parameters.AddWithValue("@mSPRI", ValidDic("$" + ColumnStart + "$99"));
                 InsertRequest.Parameters.AddWithValue("@mSSEC", ValidDic("$" + ColumnStart + "$100"));
-                InsertRequest.Parameters.AddWithValue("@agentName", )
+                InsertRequest.Parameters.AddWithValue("@agentName", ConnectedDC + "." + ConnectedAG);
 
                 try
                 {
@@ -586,5 +604,7 @@ namespace magentr
             }
 
         }
+
     }
+
 }
