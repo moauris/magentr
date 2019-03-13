@@ -22,7 +22,7 @@ namespace magentr
     /// </summary>
     public partial class MainWindow : Window
     {
-        public string dirNewRequest = "";
+        public string[] dirNewRequest = { "" };
         private Dictionary<string, string> dictRequestRawData //Stores Cell Info
             = new Dictionary<string, string>();
         private Dictionary<string, string> dictCheckBox       //Stores Checkbox Info
@@ -42,7 +42,7 @@ namespace magentr
             double dur = (DateTime.Now - lasttime).TotalSeconds;
             string OutputMessage = string.Format(messageformat
                 , TimeStamp, ThisName, message, Math.Round(dur, 4));
-            Debug.Print(OutputMessage);
+            Console.WriteLine(OutputMessage);
             lasttime = DateTime.Now;
 
         }
@@ -59,46 +59,53 @@ namespace magentr
             #region Open File Dialog
             DateTime timeStart = DateTime.Now;
             OpenFileDialog OpenFileNew = new OpenFileDialog();
+            OpenFileNew.Multiselect = true; // < Enabling Multiple selection
             OpenFileNew.DefaultExt = ".xlsx;.xls";
             OpenFileNew.Filter = "Excel Worksheet (.xls;.xlsx)|*.xls;*.xlsx";
             OpenFileNew.ShowDialog();
             printDebug(st, OpenFileNew.FileName + " Selected.");
-            dirNewRequest = OpenFileNew.FileName;
-            FileInfo RequestFileInfo = null;
-            try
+            dirNewRequest = OpenFileNew.FileNames;
+            foreach (string s in dirNewRequest)
             {
-                RequestFileInfo = new FileInfo(OpenFileNew.FileName);
-            }
-            catch (Exception ex)
-            {
-                printDebug(st, "[Warning...] Invalid File Name or File Not selected. Existing.");
-                printDebug(st, ex.Message);
-                return;
-            }
-            RequestBango = RequestFileInfo.Name;
+                printDebug(st, "processing: " + s);
 
-            #endregion Open File Dialog
-            if (dirNewRequest != "")
-            {
-                //Start Procedure when fetched file is not null.
-                OleDbConnectionStringBuilder connSB = new OleDbConnectionStringBuilder();
-                connSB.Provider = "Microsoft.ACE.OLEDB.12.0";
-                connSB.DataSource = @"C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
-                connString = connSB.ToString();
-                printDebug(st, "Target Dir is not Empty, judging if this file is already synced.");
-                if (await CheckFileExist(RequestFileInfo.Name))
+                FileInfo RequestFileInfo = null;
+                try
                 {
-                    printDebug(st, "File Already Synced");
+                    RequestFileInfo = new FileInfo(s);
+                }
+                catch (Exception ex)
+                {
+                    printDebug(st, "[Warning...] Invalid File Name or File Not selected. Existing.");
+                    printDebug(st, ex.Message);
                     return;
                 }
-                await FetchNewRequest(dirNewRequest);
+                RequestBango = RequestFileInfo.Name;
+
+                #endregion Open File Dialog
+
+                if (s != "")
+                {
+                    //Start Procedure when fetched file is not null.
+                    OleDbConnectionStringBuilder connSB = new OleDbConnectionStringBuilder();
+                    connSB.Provider = "Microsoft.ACE.OLEDB.12.0";
+                    connSB.DataSource = @"C:\Users\MoChen\source\repos\magentr\magentr\magentr.accdb";
+                    connString = connSB.ToString();
+                    printDebug(st, "Target Dir is not Empty, judging if this file is already synced.");
+                    if (await CheckFileExist(RequestFileInfo.Name))
+                    {
+                        printDebug(st, "File Already Synced");
+                        return;
+                    }
+                    await FetchNewRequest(s);
+                }
+                else
+                {
+                    printDebug(st, "No file selected.");
+                }
+                printDebug(st, string.Format("Button Click Ran for: {0}",
+                    (DateTime.Now - timeStart).ToString("hh':'mm':'ss")));
             }
-            else
-            {
-                printDebug(st, "No file selected.");
-            }
-            printDebug(st, string.Format("Button Click Ran for: {0}", 
-                (DateTime.Now - timeStart).ToString("hh':'mm':'ss")));
         }
 
         private async Task<bool> CheckFileExist(string FileName)
