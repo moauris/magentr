@@ -56,6 +56,7 @@ namespace magentr
         {
             string st = "OnNewRequestClick(object sender, RoutedEventArgs e){}";
             //Initiate Load New Request Form Procedure
+            //TaskNewRequest 
             #region Open File Dialog
             DateTime timeStart = DateTime.Now;
             OpenFileDialog OpenFileNew = new OpenFileDialog();
@@ -84,7 +85,7 @@ namespace magentr
 
                 #endregion Open File Dialog
 
-                if (s != "")
+                if (s != "")                   
                 {
                     //Start Procedure when fetched file is not null.
                     OleDbConnectionStringBuilder connSB = new OleDbConnectionStringBuilder();
