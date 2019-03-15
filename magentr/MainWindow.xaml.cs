@@ -503,8 +503,8 @@ namespace magentr
         }
         
 
-        private string SyncColumn
-            ( string ConnectionString
+        private OleDbCommand SyncColumn
+            ( OleDbConnection TargetConn
             , string ColumnStart
             , string ColumnFinish)
         {
